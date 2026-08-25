@@ -1,0 +1,23 @@
+# --- Private working docs (never committed) ---
+# The design spec + any Claude/agent instruction files stay local only.
+SPEC.md
+CLAUDE.md
+CLAUDE-*.md
+
+# --- Swift Package Manager ---
+.build/
+.swiftpm/
+Package.resolved
+
+# --- Xcode ---
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.xcscmblueprint
+*.xccheckout
+
+# --- macOS ---
+.DS_Store
+
+# --- Local scratch ---
+*.local
