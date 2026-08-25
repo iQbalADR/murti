@@ -37,14 +37,14 @@ public struct MurtiEngine {
     public var renderer: MurtiRenderer { MurtiRenderer(factory: componentFactory) }
 
     /// Resolve a source to its screen root, failing closed on any error.
-    /// (Signature verification and schema validation will wrap the decode here.)
+    /// Key sources go through the cache tiers (render → disk → fetch, with an
+    /// offline last-good fallback); other sources fetch and materialize directly.
     public func load(_ source: ScreenSource) async -> LoadState {
         do {
-            let bytes = try await sourceData(source)
-            let payloadData = try unwrap(bytes)      // verify signature / unwrap envelope per policy
-            let payload = try JSONDecoder().decode(MurtiPayload.self, from: payloadData)
-            try validator.validate(payload)          // layer 2 (schema) + bounds
-            return .loaded(payload.screen.root)
+            if case .key(let screenKey) = source, let cache, let coordinator {
+                return .loaded(try await loadCached(screenKey, cache: cache, coordinator: coordinator))
+            }
+            return .loaded(try await materialize(sourceData(source)))
         } catch let error as MurtiError {
             return .failed(error)
         } catch let error as DecodingError {
@@ -52,6 +52,48 @@ public struct MurtiEngine {
         } catch {
             return .failed(.decode(error.localizedDescription))
         }
+    }
+
+    /// Serve a keyed screen through the cache tiers, verifying on every path so a
+    /// poisoned disk entry is caught and evicted. Render hit → disk hit (re-verify)
+    /// → fetch (store + record last-good) → offline fallback to the last-good version.
+    private func loadCached(_ screenKey: String, cache: MurtiCache, coordinator: MurtiCacheCoordinator) async throws -> MurtiNode {
+        let version = coordinator.version(for: screenKey) ?? "unversioned"
+        let key = cacheKey(screenKey, version)
+
+        if let node = coordinator.renderCached(key) { return node }                      // render tier
+
+        if let sealed = await cache.store.data(for: key) {                               // disk tier
+            if let node = try? materializeSealed(sealed, cache: cache) {                 // re-verify
+                coordinator.storeRender(node, for: key)
+                coordinator.markGood(screenKey: screenKey, version: version)
+                return node
+            }
+            await cache.store.remove(key)                                                // tampered → evict
+        }
+
+        do {                                                                              // fetch
+            let raw = try await screenFactory.data(for: screenKey)
+            let node = try materialize(raw)
+            await cache.store.store(try cache.cipher.seal(raw), for: key)
+            coordinator.storeRender(node, for: key)
+            coordinator.markGood(screenKey: screenKey, version: version)
+            return node
+        } catch {
+            if let good = coordinator.lastGoodVersion(screenKey) {                        // offline fallback
+                let goodKey = cacheKey(screenKey, good)
+                if let sealed = await cache.store.data(for: goodKey), let node = try? materializeSealed(sealed, cache: cache) {
+                    coordinator.storeRender(node, for: goodKey)
+                    return node
+                }
+            }
+            throw error
+        }
+    }
+
+    /// Open (decrypt if a cipher is configured) then verify + validate cached bytes.
+    private func materializeSealed(_ sealed: Data, cache: MurtiCache) throws -> MurtiNode {
+        try materialize(cache.cipher.open(sealed))   // decrypt (if any) then verify + validate
     }
 
     private func sourceData(_ source: ScreenSource) async throws -> Data {
