@@ -10,6 +10,8 @@ public struct MurtiEngine {
     public let actionDispatcher: MurtiActionDispatcher
     public let validator: MurtiSchemaValidator
     public let security: PayloadSecurity
+    public let cache: MurtiCache?
+    public let coordinator: MurtiCacheCoordinator?
     let namedResolver: (@Sendable (String) async throws -> Data)?
 
     public init(
@@ -18,6 +20,7 @@ public struct MurtiEngine {
         actionDispatcher: MurtiActionDispatcher = MurtiActionDispatcher(),
         validator: MurtiSchemaValidator = MurtiSchemaValidator(),
         security: PayloadSecurity = .insecureDevelopment,
+        cache: MurtiCache? = nil,
         namedResolver: (@Sendable (String) async throws -> Data)? = nil
     ) {
         self.componentFactory = componentFactory
@@ -25,6 +28,8 @@ public struct MurtiEngine {
         self.actionDispatcher = actionDispatcher
         self.validator = validator
         self.security = security
+        self.cache = cache
+        self.coordinator = cache.map { MurtiCacheCoordinator(renderLimit: $0.renderCacheLimit) }
         self.namedResolver = namedResolver
     }
 
@@ -59,6 +64,14 @@ public struct MurtiEngine {
             guard let namedResolver else { throw MurtiError.unknownScreen(name) }
             return try await namedResolver(name)
         }
+    }
+
+    /// Verify (per policy) → decode → validate → screen root. Reused by fetch and cache.
+    private func materialize(_ rawBytes: Data) throws -> MurtiNode {
+        let payloadData = try unwrap(rawBytes)
+        let payload = try JSONDecoder().decode(MurtiPayload.self, from: payloadData)
+        try validator.validate(payload)
+        return payload.screen.root
     }
 
     /// Verify/unwrap the raw bytes into the plaintext payload bytes, per policy.
