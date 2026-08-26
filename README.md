@@ -1,5 +1,11 @@
 # Murti
 
+[![CI](https://github.com/iQbalADR/murti/actions/workflows/ci.yml/badge.svg)](https://github.com/iQbalADR/murti/actions/workflows/ci.yml)
+[![Swift 6](https://img.shields.io/badge/Swift-6-orange.svg)](https://swift.org)
+[![SwiftPM](https://img.shields.io/badge/SwiftPM-compatible-brightgreen)](https://github.com/iQbalADR/murti)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2017%20%7C%20macOS%2014-lightgrey.svg)](https://github.com/iQbalADR/murti)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 > A SwiftUI-native **server-driven UI** framework — render screens from JSON,
 > navigate and call APIs declaratively, extend with any third-party component,
 > with fintech-grade validation and security.
@@ -9,8 +15,8 @@ navigates, and talks to the network. Ship layout changes without an App Store
 release. Deliberately **SwiftUI-only** — a strength, not a limitation.
 
 > **Status:** early development. The core engine (render + actions + validation +
-> signature verification) is built and tested (72 tests); APIs may still change
-> before 1.0.
+> signature verification + versioned secure caching) is built, tested, and
+> CI-checked; APIs may still change before 1.0.
 
 ---
 

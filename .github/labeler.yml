@@ -1,0 +1,28 @@
+# PR auto-labels by touched path (actions/labeler v5 syntax).
+core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Sources/MurtiCore/**"
+          - "Package.swift"
+
+gallery:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Sources/MurtiGallery/**"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Tests/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "scripts/**"
