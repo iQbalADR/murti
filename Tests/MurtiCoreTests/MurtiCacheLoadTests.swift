@@ -70,6 +70,52 @@ struct MurtiCacheLoadTests {
         #expect(root.type == "text")
         #expect(await fetches.count == 2)                           // fetch #2 was attempted (threw) → offline served
     }
+
+    @Test func forgedFreshPayloadIsNotMaskedAsStale() async {
+        let attacker = Curve25519.Signing.PrivateKey()
+        let store = MemoryCacheStore(); let fetches = FetchCounter()
+        let factory = MurtiScreenFactory()
+        factory.register("home") { await fetches.bump()
+            if await fetches.count == 1 { return await self.envelope("text") }   // good → last-good on disk
+            let payload = Data(#"{"schemaVersion":"1.0","screen":{"key":"home","root":{"type":"text"}}}"#.utf8)
+            let sig = try! attacker.signature(for: payload)                        // forged (wrong key)
+            return try! JSONEncoder().encode(MurtiEnvelope(schemaVersion: "1.0", alg: "ed25519", payload: payload, signature: sig))
+        }
+        let engine = MurtiEngine(componentFactory: .withBuiltins, screenFactory: factory,
+                                 security: .signed(verifier),
+                                 cache: MurtiCache(store: store, cipher: PassthroughCipher()))
+        _ = await engine.load(.key("home"))                                        // good load → last-good "unversioned"
+        engine.coordinator?.purgeRenderCache()
+        engine.coordinator?.apply(Manifest(sequence: 1, screens: ["home": "v2"]))  // next key misses disk → refetch
+        if case .failed = await engine.load(.key("home")) {} else {
+            Issue.record("a forged FRESH payload must surface as .failed, not be masked as offline/stale")
+        }
+    }
+
+    @Test func renderTierServesEvenWhenDiskEntryCorrupt() async {
+        let store = MemoryCacheStore(); let fetches = FetchCounter()
+        let engine = makeEngine(store: store, fetches: fetches)
+        _ = await engine.load(.key("home"))                       // fills render + disk
+        await store.store(Data("corrupt".utf8), for: cacheKey("home", "unversioned"))  // corrupt disk, keep render
+        _ = await engine.load(.key("home"))                        // render hit, disk never consulted
+        #expect(await fetches.count == 1)
+    }
+
+    @Test func offlineWithTamperedLastGoodFailsClosed() async {
+        let store = MemoryCacheStore(); let fetches = FetchCounter()
+        let factory = MurtiScreenFactory()
+        factory.register("home") { await fetches.bump()
+            if await fetches.count == 1 { return await self.envelope("text") }
+            throw MurtiError.network(status: nil) }
+        let engine = MurtiEngine(componentFactory: .withBuiltins, screenFactory: factory,
+                                 security: .signed(verifier),
+                                 cache: MurtiCache(store: store, cipher: PassthroughCipher()))
+        _ = await engine.load(.key("home"))                        // good load, marks good "unversioned"
+        engine.coordinator?.purgeRenderCache()
+        engine.coordinator?.apply(Manifest(sequence: 1, screens: ["home": "v2"]))   // next key misses disk
+        await store.store(Data("corrupt".utf8), for: cacheKey("home", "unversioned"))  // corrupt last-good
+        if case .failed = await engine.load(.key("home")) {} else { Issue.record("tampered last-good must fail closed") }
+    }
 }
 
 actor FetchCounter { private(set) var count = 0; func bump() { count += 1 } }

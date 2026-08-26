@@ -89,23 +89,29 @@ public struct MurtiEngine {
             await cache.store.remove(key)                                                // tampered → evict
         }
 
-        do {                                                                              // fetch
-            let raw = try await screenFactory.data(for: screenKey)
-            let node = try materialize(raw)
-            await cache.store.store(try cache.cipher.seal(raw), for: key)
-            coordinator.storeRender(node, for: key)
-            coordinator.markGood(screenKey: screenKey, version: version)
-            return node
+        // Fetch. A TRANSPORT failure falls back to last-good (re-verified, fail-closed);
+        // a verification/validation failure of fresh bytes surfaces instead of being masked.
+        let raw: Data
+        do {
+            raw = try await screenFactory.data(for: screenKey)
         } catch {
-            if let good = coordinator.lastGoodVersion(screenKey) {                        // offline fallback
+            if let good = coordinator.lastGoodVersion(screenKey) {
                 let goodKey = cacheKey(screenKey, good)
-                if let sealed = await cache.store.data(for: goodKey), let node = try? materializeSealed(sealed, cache: cache) {
+                if let sealed = await cache.store.data(for: goodKey),
+                   let node = try? materializeSealed(sealed, cache: cache) {
                     coordinator.storeRender(node, for: goodKey)
                     return node
                 }
             }
             throw error
         }
+        let node = try materialize(raw)                       // fresh bytes verified + validated
+        if let sealed = try? cache.cipher.seal(raw) {         // persist + advertise last-good only if sealed
+            await cache.store.store(sealed, for: key)
+            coordinator.markGood(screenKey: screenKey, version: version)
+        }
+        coordinator.storeRender(node, for: key)
+        return node
     }
 
     /// Open (decrypt if a cipher is configured) then verify + validate cached bytes.

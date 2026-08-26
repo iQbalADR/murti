@@ -15,6 +15,10 @@ public struct AESGCMCipher: MurtiCacheCipher {
     }
 
     public func open(_ ciphertext: Data) throws -> Data {
-        try AES.GCM.open(AES.GCM.SealedBox(combined: ciphertext), using: key)
+        do {
+            return try AES.GCM.open(AES.GCM.SealedBox(combined: ciphertext), using: key)
+        } catch {
+            throw MurtiError.decryptionFailed
+        }
     }
 }
