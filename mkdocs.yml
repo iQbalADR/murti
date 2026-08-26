@@ -1,0 +1,67 @@
+site_name: Murti
+site_description: >-
+  A SwiftUI-native server-driven UI framework — render native screens from JSON,
+  navigate and call APIs declaratively, wrap any component, with fintech-grade
+  validation, signing, and secure caching.
+site_url: https://iqbaladr.github.io/murti/
+repo_url: https://github.com/iQbalADR/murti
+repo_name: iQbalADR/murti
+copyright: © 2026 iQbalADR · Apache-2.0 License
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  icon:
+    logo: material/view-dashboard-variant
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Reference:
+      - Payload schema & validation: schema.md
+      - Networking adapters: networking.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+
+# Internal design docs and fixtures aren't part of the published site.
+exclude_docs: |
+  plans/

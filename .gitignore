@@ -16,6 +16,9 @@ DerivedData/
 *.xcscmblueprint
 *.xccheckout
 
+# --- MkDocs (Pages build output) ---
+/site/
+
 # --- macOS ---
 .DS_Store
 

@@ -1,6 +1,7 @@
 # Murti
 
 [![CI](https://github.com/iQbalADR/murti/actions/workflows/ci.yml/badge.svg)](https://github.com/iQbalADR/murti/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-murti-blue)](https://iqbaladr.github.io/murti/)
 [![Swift 6](https://img.shields.io/badge/Swift-6-orange.svg)](https://swift.org)
 [![SwiftPM](https://img.shields.io/badge/SwiftPM-compatible-brightgreen)](https://github.com/iQbalADR/murti)
 [![Platforms](https://img.shields.io/badge/platforms-iOS%2017%20%7C%20macOS%2014-lightgrey.svg)](https://github.com/iQbalADR/murti)
