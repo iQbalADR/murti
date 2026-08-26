@@ -110,6 +110,23 @@ action** carries *named* targets at its top level, never a URL.
 
 ---
 
+## Manifest
+
+The cache's version index is fetched as its own signed payload — the **same
+envelope** used for screens, wrapping this JSON:
+
+```json
+{ "sequence": 7, "screens": { "home": "v7", "dashboard": "v3" } }
+```
+
+`screens` maps each `screenKey` to the version the cache should treat as current.
+`sequence` is **monotonic**: a manifest whose `sequence` is lower than the last
+applied one is rejected, which defends against a rollback to a stale-but-validly-
+signed manifest. The envelope is verified before the manifest is trusted, exactly
+like a payload.
+
+---
+
 ## Valid fixture
 
 ```json

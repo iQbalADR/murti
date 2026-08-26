@@ -146,7 +146,7 @@ flowchart TD
 | --- | --- | --- |
 | **Factory / Abstract Factory** | `MurtiComponentFactory`, `MurtiScreenFactory` | a `type`/`key` string → an object |
 | **Command** | `MurtiCommand` set (Navigate, API, Dismiss, Refresh, OpenURL) | each action is self-contained; closed vocabulary, no logic in JSON |
-| **Strategy / Ports & Adapters** | `MurtiNetworkClient`, `MurtiSignatureVerifier`, cache | plug in an implementation without touching core |
+| **Strategy / Ports & Adapters** | `MurtiNetworkClient`, `MurtiSignatureVerifier`, `MurtiCacheStore`, `MurtiCacheCipher` | plug in an implementation without touching core |
 | **Composite + Interpreter** | `MurtiRenderer` | walk the `MurtiNode` tree; resolve `{{token}}` against the data context |
 | **Null Object** | unknown-component fallback | a safe placeholder — never a crash, forward-compatible |
 | **Dependency Injection** | `MurtiEngine` | receives its factories/strategies; no global singletons → testable |
@@ -196,6 +196,23 @@ Verification runs on **every** load — including from cache — so a poisoned c
 is caught, not just a bad download. Plus bounded validation (depth / node / chain
 caps) and the closed action vocabulary. The framework provides the *mechanisms*;
 you own key management and endpoints — it never claims to be "secure" for you.
+
+## Caching
+
+`MurtiCore` ships an optional, signed, versioned cache — off unless you wire it:
+
+```swift
+MurtiEngine(…, cache: MurtiCache(store: FileCacheStore(), cipher: PassthroughCipher()))
+```
+
+Call `try await engine.refreshManifest()` (adopter-triggered) to pull the signed
+version manifest — which version of each screen is current. The cache is three
+tiers: an in-memory decoded-node tier, and an on-disk tier of signed envelopes
+(written with Data Protection, optionally encrypted via `AESGCMCipher`), driven by
+the manifest and keyed by `screenKey@version`. Every disk load **re-verifies the
+signature** before use — fail-closed, so a poisoned entry is evicted, never
+rendered. Offline, the last-good version is served (itself re-verified). Warm a
+key ahead of navigation with `await engine.prefetch(["home"])`.
 
 ## Demo — the gallery
 

@@ -11,7 +11,7 @@ public struct MurtiEngine {
     public let validator: MurtiSchemaValidator
     public let security: PayloadSecurity
     public let cache: MurtiCache?
-    public let coordinator: MurtiCacheCoordinator?
+    let coordinator: MurtiCacheCoordinator?
     let namedResolver: (@Sendable (String) async throws -> Data)?
     let manifestLoader: (@Sendable () async throws -> Data)?
 
@@ -63,7 +63,7 @@ public struct MurtiEngine {
         let raw = try await manifestLoader()
         let payloadData = try unwrap(raw)                       // verify signature
         let manifest = try JSONDecoder().decode(Manifest.self, from: payloadData)
-        _ = coordinator.apply(manifest)                         // no-downgrade enforced in apply
+        coordinator.apply(manifest)                             // no-downgrade enforced in apply
     }
 
     /// Warm the cache for the given screen keys.

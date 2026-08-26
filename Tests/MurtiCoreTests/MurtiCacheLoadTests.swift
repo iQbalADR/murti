@@ -116,6 +116,15 @@ struct MurtiCacheLoadTests {
         await store.store(Data("corrupt".utf8), for: cacheKey("home", "unversioned"))  // corrupt last-good
         if case .failed = await engine.load(.key("home")) {} else { Issue.record("tampered last-good must fail closed") }
     }
+
+    @Test func prefetchWarmsCacheSoLoadDoesNotRefetch() async {
+        let store = MemoryCacheStore(); let fetches = FetchCounter()
+        let engine = makeEngine(store: store, fetches: fetches)
+        await engine.prefetch(["home"])                 // warms render + disk (fetch #1)
+        engine.coordinator?.purgeRenderCache()
+        guard case .loaded = await engine.load(.key("home")) else { Issue.record("served from disk"); return }
+        #expect(await fetches.count == 1)               // load served from disk, no refetch
+    }
 }
 
 actor FetchCounter { private(set) var count = 0; func bump() { count += 1 } }

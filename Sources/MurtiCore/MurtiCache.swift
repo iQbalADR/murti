@@ -4,7 +4,7 @@ import Foundation
 public struct MurtiCache: Sendable {
     public let store: any MurtiCacheStore
     public let cipher: any MurtiCacheCipher
-    public var renderCacheLimit: Int
+    public let renderCacheLimit: Int
     public init(store: any MurtiCacheStore,
                 cipher: any MurtiCacheCipher = PassthroughCipher(),
                 renderCacheLimit: Int = 32) {

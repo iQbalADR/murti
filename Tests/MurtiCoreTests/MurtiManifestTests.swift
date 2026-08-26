@@ -32,6 +32,20 @@ struct MurtiManifestTests {
             let sig = try! attacker.signature(for: payload)
             return try! JSONEncoder().encode(MurtiEnvelope(schemaVersion: "1.0", alg: "ed25519", payload: payload, signature: sig))
         }
-        await #expect(throws: (any Error).self) { try await e.refreshManifest() }
+        await #expect(throws: MurtiError.self) { try await e.refreshManifest() }
+        #expect(e.coordinator?.version(for: "home") == nil)   // forged manifest was not applied
+    }
+
+    @Test func refreshRejectsDowngrade() async throws {
+        let calls = FetchCounter()
+        let e = engine {
+            await calls.bump()
+            let seq = await calls.count == 1 ? 7 : 5           // seq 7 first, then an older seq 5
+            return await self.manifestEnvelope(seq, ["home": seq == 7 ? "v7" : "v5"])
+        }
+        try await e.refreshManifest()
+        #expect(e.coordinator?.version(for: "home") == "v7")
+        try await e.refreshManifest()                          // older sequence, validly signed: must not throw, must not apply
+        #expect(e.coordinator?.version(for: "home") == "v7")
     }
 }
