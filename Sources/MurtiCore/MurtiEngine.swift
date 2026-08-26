@@ -10,7 +10,10 @@ public struct MurtiEngine {
     public let actionDispatcher: MurtiActionDispatcher
     public let validator: MurtiSchemaValidator
     public let security: PayloadSecurity
+    public let cache: MurtiCache?
+    let coordinator: MurtiCacheCoordinator?
     let namedResolver: (@Sendable (String) async throws -> Data)?
+    let manifestLoader: (@Sendable () async throws -> Data)?
 
     public init(
         componentFactory: MurtiComponentFactory,
@@ -18,28 +21,33 @@ public struct MurtiEngine {
         actionDispatcher: MurtiActionDispatcher = MurtiActionDispatcher(),
         validator: MurtiSchemaValidator = MurtiSchemaValidator(),
         security: PayloadSecurity = .insecureDevelopment,
-        namedResolver: (@Sendable (String) async throws -> Data)? = nil
+        cache: MurtiCache? = nil,
+        namedResolver: (@Sendable (String) async throws -> Data)? = nil,
+        manifestLoader: (@Sendable () async throws -> Data)? = nil
     ) {
         self.componentFactory = componentFactory
         self.screenFactory = screenFactory
         self.actionDispatcher = actionDispatcher
         self.validator = validator
         self.security = security
+        self.cache = cache
+        self.coordinator = cache.map { MurtiCacheCoordinator(renderLimit: $0.renderCacheLimit) }
         self.namedResolver = namedResolver
+        self.manifestLoader = manifestLoader
     }
 
     /// The renderer over the registered components.
     public var renderer: MurtiRenderer { MurtiRenderer(factory: componentFactory) }
 
     /// Resolve a source to its screen root, failing closed on any error.
-    /// (Signature verification and schema validation will wrap the decode here.)
+    /// Key sources go through the cache tiers (render → disk → fetch, with an
+    /// offline last-good fallback); other sources fetch and materialize directly.
     public func load(_ source: ScreenSource) async -> LoadState {
         do {
-            let bytes = try await sourceData(source)
-            let payloadData = try unwrap(bytes)      // verify signature / unwrap envelope per policy
-            let payload = try JSONDecoder().decode(MurtiPayload.self, from: payloadData)
-            try validator.validate(payload)          // layer 2 (schema) + bounds
-            return .loaded(payload.screen.root)
+            if case .key(let screenKey) = source, let cache, let coordinator {
+                return .loaded(try await loadCached(screenKey, cache: cache, coordinator: coordinator))
+            }
+            return .loaded(try await materialize(sourceData(source)))
         } catch let error as MurtiError {
             return .failed(error)
         } catch let error as DecodingError {
@@ -47,6 +55,68 @@ public struct MurtiEngine {
         } catch {
             return .failed(.decode(error.localizedDescription))
         }
+    }
+
+    /// Fetch the signed manifest, verify it, and apply it (rejecting downgrades).
+    public func refreshManifest() async throws {
+        guard let coordinator, let manifestLoader else { return }
+        let raw = try await manifestLoader()
+        let payloadData = try unwrap(raw)                       // verify signature
+        let manifest = try JSONDecoder().decode(Manifest.self, from: payloadData)
+        coordinator.apply(manifest)                             // no-downgrade enforced in apply
+    }
+
+    /// Warm the cache for the given screen keys.
+    public func prefetch(_ screenKeys: [String]) async {
+        for key in screenKeys { _ = await load(.key(key)) }
+    }
+
+    /// Serve a keyed screen through the cache tiers, verifying on every path so a
+    /// poisoned disk entry is caught and evicted. Render hit → disk hit (re-verify)
+    /// → fetch (store + record last-good) → offline fallback to the last-good version.
+    private func loadCached(_ screenKey: String, cache: MurtiCache, coordinator: MurtiCacheCoordinator) async throws -> MurtiNode {
+        let version = coordinator.version(for: screenKey) ?? "unversioned"
+        let key = cacheKey(screenKey, version)
+
+        if let node = coordinator.renderCached(key) { return node }                      // render tier
+
+        if let sealed = await cache.store.data(for: key) {                               // disk tier
+            if let node = try? materializeSealed(sealed, cache: cache) {                 // re-verify
+                coordinator.storeRender(node, for: key)
+                coordinator.markGood(screenKey: screenKey, version: version)
+                return node
+            }
+            await cache.store.remove(key)                                                // tampered → evict
+        }
+
+        // Fetch. A TRANSPORT failure falls back to last-good (re-verified, fail-closed);
+        // a verification/validation failure of fresh bytes surfaces instead of being masked.
+        let raw: Data
+        do {
+            raw = try await screenFactory.data(for: screenKey)
+        } catch {
+            if let good = coordinator.lastGoodVersion(screenKey) {
+                let goodKey = cacheKey(screenKey, good)
+                if let sealed = await cache.store.data(for: goodKey),
+                   let node = try? materializeSealed(sealed, cache: cache) {
+                    coordinator.storeRender(node, for: goodKey)
+                    return node
+                }
+            }
+            throw error
+        }
+        let node = try materialize(raw)                       // fresh bytes verified + validated
+        if let sealed = try? cache.cipher.seal(raw) {         // persist + advertise last-good only if sealed
+            await cache.store.store(sealed, for: key)
+            coordinator.markGood(screenKey: screenKey, version: version)
+        }
+        coordinator.storeRender(node, for: key)
+        return node
+    }
+
+    /// Open (decrypt if a cipher is configured) then verify + validate cached bytes.
+    private func materializeSealed(_ sealed: Data, cache: MurtiCache) throws -> MurtiNode {
+        try materialize(cache.cipher.open(sealed))   // decrypt (if any) then verify + validate
     }
 
     private func sourceData(_ source: ScreenSource) async throws -> Data {
@@ -59,6 +129,14 @@ public struct MurtiEngine {
             guard let namedResolver else { throw MurtiError.unknownScreen(name) }
             return try await namedResolver(name)
         }
+    }
+
+    /// Verify (per policy) → decode → validate → screen root. Reused by fetch and cache.
+    private func materialize(_ rawBytes: Data) throws -> MurtiNode {
+        let payloadData = try unwrap(rawBytes)
+        let payload = try JSONDecoder().decode(MurtiPayload.self, from: payloadData)
+        try validator.validate(payload)
+        return payload.screen.root
     }
 
     /// Verify/unwrap the raw bytes into the plaintext payload bytes, per policy.
