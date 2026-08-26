@@ -13,6 +13,7 @@ public struct MurtiEngine {
     public let cache: MurtiCache?
     public let coordinator: MurtiCacheCoordinator?
     let namedResolver: (@Sendable (String) async throws -> Data)?
+    let manifestLoader: (@Sendable () async throws -> Data)?
 
     public init(
         componentFactory: MurtiComponentFactory,
@@ -21,7 +22,8 @@ public struct MurtiEngine {
         validator: MurtiSchemaValidator = MurtiSchemaValidator(),
         security: PayloadSecurity = .insecureDevelopment,
         cache: MurtiCache? = nil,
-        namedResolver: (@Sendable (String) async throws -> Data)? = nil
+        namedResolver: (@Sendable (String) async throws -> Data)? = nil,
+        manifestLoader: (@Sendable () async throws -> Data)? = nil
     ) {
         self.componentFactory = componentFactory
         self.screenFactory = screenFactory
@@ -31,6 +33,7 @@ public struct MurtiEngine {
         self.cache = cache
         self.coordinator = cache.map { MurtiCacheCoordinator(renderLimit: $0.renderCacheLimit) }
         self.namedResolver = namedResolver
+        self.manifestLoader = manifestLoader
     }
 
     /// The renderer over the registered components.
@@ -52,6 +55,20 @@ public struct MurtiEngine {
         } catch {
             return .failed(.decode(error.localizedDescription))
         }
+    }
+
+    /// Fetch the signed manifest, verify it, and apply it (rejecting downgrades).
+    public func refreshManifest() async throws {
+        guard let coordinator, let manifestLoader else { return }
+        let raw = try await manifestLoader()
+        let payloadData = try unwrap(raw)                       // verify signature
+        let manifest = try JSONDecoder().decode(Manifest.self, from: payloadData)
+        _ = coordinator.apply(manifest)                         // no-downgrade enforced in apply
+    }
+
+    /// Warm the cache for the given screen keys.
+    public func prefetch(_ screenKeys: [String]) async {
+        for key in screenKeys { _ = await load(.key(key)) }
     }
 
     /// Serve a keyed screen through the cache tiers, verifying on every path so a
