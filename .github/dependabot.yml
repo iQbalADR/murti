@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # GitHub Actions used by the workflows above. Batched into a single PR per run.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["ci", "dependencies"]
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # SwiftPM dependencies (root Package.swift). MurtiCore is dependency-free today;
+  # this keeps any tooling or optional-adapter dependencies current.
+  - package-ecosystem: swift
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["dependencies"]
+    groups:
+      swift:
+        patterns: ["*"]

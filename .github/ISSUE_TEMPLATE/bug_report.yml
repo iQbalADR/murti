@@ -1,0 +1,31 @@
+name: Bug report
+description: Something in Murti isn't working as expected.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal JSON payload + engine wiring that triggers it, if you can.
+      render: swift
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Murti / Swift / OS versions
+      placeholder: "MurtiCore main · Swift 6.2 · iOS 17.4 / macOS 14.5"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, a failing test, or the fixture that reproduces it.
