@@ -235,6 +235,8 @@ simulator).
 
 ## Docs
 
+- [Authoring screens](docs/authoring.md) — the MurtiBuilder DSL for writing
+  screens in Swift, and MurtiGen for build-time JSON generation.
 - [Payload schema & validation](docs/schema.md) — the authoritative JSON Schema,
   `schemaVersion` policy, bounds, and valid/invalid fixtures.
 - [Networking adapters](docs/networking.md) — the port + Alamofire / Moya /

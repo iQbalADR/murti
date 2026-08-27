@@ -42,6 +42,7 @@ theme:
 nav:
   - Home: index.md
   - Reference:
+      - Authoring screens: authoring.md
       - Payload schema & validation: schema.md
       - Networking adapters: networking.md
 
