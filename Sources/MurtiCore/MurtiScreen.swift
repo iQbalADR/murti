@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// One generic screen, driven entirely by data. N screens = N JSON sources, never
-/// a class per screen. It loads its source, renders the tree, and wires action
-/// dispatch — fail-closed at every step.
+/// A single view that renders any screen from its JSON source. Every screen in an
+/// app uses this same type with a different source, so there's no per-screen View
+/// subclass. It loads the source, renders the decoded tree, and hands taps to the
+/// action dispatcher; a load failure shows an error view rather than throwing.
 ///
-/// `.id(source.identity)` gives each source stable identity so SwiftUI never
-/// leaks state between screens (and a source change forces a fresh load).
+/// Applying `.id(source.identity)` gives each source a stable SwiftUI identity, so
+/// state isn't carried over between screens and changing the source reloads.
 @MainActor
 public struct MurtiScreen: View {
     private let source: ScreenSource

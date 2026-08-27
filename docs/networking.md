@@ -24,7 +24,7 @@ Library types (`AFError`, Moya's `Response`) never cross this boundary.
 
 ```mermaid
 flowchart TB
-    App["Your app · composition root<br/>picks ONE adapter and injects it"]
+    App["Your app<br/>picks one adapter and passes it in"]
 
     subgraph core["MurtiCore — imports no networking library"]
         CMD["APICommand"]
@@ -123,7 +123,7 @@ struct MoyaClient: MurtiNetworkClient {
 }
 ```
 
-## Wiring (composition root)
+## Wiring (at app startup)
 
 ```swift
 let client: any MurtiNetworkClient = AlamofireClient(session: pinnedSession)

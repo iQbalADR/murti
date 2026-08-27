@@ -43,7 +43,7 @@ dependencies: [
 import SwiftUI
 import MurtiCore
 
-// 1. Build the engine once (composition root) — pure DI, no singletons.
+// 1. Create the engine, giving it the component/screen factories and the action dispatcher.
 let engine = MurtiEngine(
     componentFactory: .withBuiltins,                 // text, image, vstack, hstack, button, card
     screenFactory: MurtiScreenFactory().register("home", data: homeJSON),
@@ -53,7 +53,7 @@ let engine = MurtiEngine(
     )
 )
 
-// 2. Render any screen by key — ONE generic view, driven entirely by JSON.
+// 2. MurtiScreen loads the JSON registered for "home" and renders it.
 struct RootView: View {
     var body: some View {
         NavigationStack {
@@ -104,7 +104,7 @@ flowchart TD
         VAL["Validate · schema · bounds · types<br/>MurtiSchemaValidator"]
     end
 
-    subgraph ENG["MurtiEngine · Dependency Injection — no singletons"]
+    subgraph ENG["MurtiEngine · injected factories &amp; strategies"]
         DEC["Decode → MurtiNode tree<br/>Codable"]
         REND["MurtiRenderer<br/>Composite walk · Interpreter for {{token}}"]
         CF["MurtiComponentFactory<br/>Factory · type → view"]

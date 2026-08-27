@@ -1,8 +1,9 @@
-# --- Private working docs (never committed) ---
-# The design spec + any Claude/agent instruction files stay local only.
+# --- Local-only working docs (never committed) ---
+# Design spec, internal design/implementation plans, and editor instruction files.
 SPEC.md
 CLAUDE.md
 CLAUDE-*.md
+docs/plans/
 
 # --- Swift Package Manager ---
 .build/
