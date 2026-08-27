@@ -18,14 +18,17 @@ let package = Package(
         .library(name: "MurtiBuilder", targets: ["MurtiBuilder"]),
         .executable(name: "MurtiGallery", targets: ["MurtiGallery"]),
         .executable(name: "MurtiGen", targets: ["MurtiGen"]),
+        .executable(name: "MurtiStudio", targets: ["MurtiStudio"]),
     ],
     targets: [
         .target(name: "MurtiCore"),
         .target(name: "MurtiBuilder", dependencies: ["MurtiCore"]),
         .executableTarget(name: "MurtiGallery", dependencies: ["MurtiCore"]),
         .executableTarget(name: "MurtiGen", dependencies: ["MurtiBuilder", "MurtiCore"]),
+        .executableTarget(name: "MurtiStudio", dependencies: ["MurtiCore"]),
         .testTarget(name: "MurtiCoreTests", dependencies: ["MurtiCore"]),
         .testTarget(name: "MurtiBuilderTests", dependencies: ["MurtiBuilder"]),
         .testTarget(name: "MurtiGenTests", dependencies: ["MurtiGen", "MurtiBuilder", "MurtiCore"]),
+        .testTarget(name: "MurtiStudioTests", dependencies: ["MurtiStudio", "MurtiCore"]),
     ]
 )

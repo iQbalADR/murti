@@ -43,6 +43,7 @@ nav:
   - Home: index.md
   - Reference:
       - Authoring screens: authoring.md
+      - Visual editor: studio.md
       - Payload schema & validation: schema.md
       - Networking adapters: networking.md
 
