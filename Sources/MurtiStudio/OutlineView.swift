@@ -11,5 +11,6 @@ struct OutlineView: View {
                 Text(node.outlineLabel).tag(node.editorID)
             }
         }
+        .toolbar { PaletteView(document: document) }
     }
 }
