@@ -1,3 +1,4 @@
+import Foundation
 import MurtiCore
 import Observation
 
@@ -32,4 +33,24 @@ final class EditorDocument {
     }
     func move(_ id: String, by delta: Int) { mutate { $0.movingChild(id, by: delta) } }
     func replace(_ id: String, with node: MurtiNode) { mutate { $0.replacing(id, with: node) } }
+
+    /// Replace the document with the decoded payload, assigning editor ids.
+    func importJSON(_ data: Data) throws {
+        let payload = try JSONDecoder().decode(MurtiPayload.self, from: data)
+        undoStack.append(root)
+        redoStack.removeAll()
+        key = payload.screen.key
+        root = payload.screen.root.withEnsuredIDs()
+        selection = nil
+    }
+
+    /// Validated JSON of the current tree, with editor ids stripped.
+    func exportJSON(validator: MurtiSchemaValidator = MurtiSchemaValidator()) throws -> Data {
+        let payload = MurtiPayload(schemaVersion: "1.0",
+                                   screen: MurtiScreenSpec(key: key, root: root.strippingIDs()))
+        try validator.validate(payload)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return try encoder.encode(payload)
+    }
 }
