@@ -33,8 +33,9 @@ extension MurtiNode {
         return withChildren(children.map { $0.insertingChild(child, into: parentID) })
     }
 
-    /// A copy with child `targetID` moved by `delta` within its parent
-    /// (no-op if the target position is out of range).
+    /// A copy with child `targetID` swapped with the sibling `delta` positions away
+    /// within its parent (no-op if that position is out of range). Callers pass ±1
+    /// for adjacent moves.
     func movingChild(_ targetID: String, by delta: Int) -> MurtiNode {
         if let index = children.firstIndex(where: { $0.id == targetID }) {
             let target = index + delta

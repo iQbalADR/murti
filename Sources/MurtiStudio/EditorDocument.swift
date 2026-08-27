@@ -19,9 +19,11 @@ final class EditorDocument {
     }
 
     private func mutate(_ transform: (MurtiNode) -> MurtiNode) {
+        let next = transform(root)
+        guard next != root else { return }   // a no-op edit must not touch undo/redo history
         undoStack.append(root)
         redoStack.removeAll()
-        root = transform(root)
+        root = next
     }
 
     func insert(_ child: MurtiNode, into parentID: String) {
@@ -44,7 +46,9 @@ final class EditorDocument {
         selection = nil
     }
 
-    /// Validated JSON of the current tree, with editor ids stripped.
+    /// Validated JSON of the current tree, with all node ids stripped for clean
+    /// output. The editor cannot tell authored ids apart from the UUIDs it assigns,
+    /// so any id present in the imported JSON is not preserved on export.
     func exportJSON(validator: MurtiSchemaValidator = MurtiSchemaValidator()) throws -> Data {
         let payload = MurtiPayload(schemaVersion: "1.0",
                                    screen: MurtiScreenSpec(key: key, root: root.strippingIDs()))

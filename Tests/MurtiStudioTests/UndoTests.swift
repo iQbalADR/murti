@@ -24,4 +24,13 @@ struct UndoTests {
         d.insert(MurtiNode(id: "y", type: "text"), into: "root")   // new edit
         #expect(d.canRedo == false)
     }
+    @Test func noOpEditLeavesHistoryUntouched() {
+        let d = EditorDocument(root: MurtiNode(id: "root", type: "vstack",
+            children: [MurtiNode(id: "a", type: "text"), MurtiNode(id: "b", type: "text")]))
+        d.insert(MurtiNode(id: "x", type: "text"), into: "root")
+        d.undo()                       // canUndo == false, canRedo == true
+        d.move("a", by: -1)            // no-op: "a" is already first
+        #expect(d.canRedo == true)     // redo not wiped by a no-op
+        #expect(d.canUndo == false)    // no phantom undo entry
+    }
 }
