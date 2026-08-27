@@ -1,0 +1,5 @@
+import SwiftUI
+
+struct StudioView: View {
+    var body: some View { Text("MurtiStudio") }
+}
