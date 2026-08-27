@@ -1,8 +1,7 @@
 import Foundation
 
-/// Turns a decoded `MurtiActionSpec` into behavior (Command pattern). Wired once
-/// at the composition root with a network client and the host navigator, then
-/// injected into the engine.
+/// Turns a decoded `MurtiActionSpec` into behavior (the Command pattern). Created
+/// once with a network client and the host navigator, then passed to the engine.
 @MainActor
 public struct MurtiActionDispatcher {
     public let network: any MurtiNetworkClient

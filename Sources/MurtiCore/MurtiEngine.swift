@@ -1,8 +1,9 @@
 import Foundation
 
-/// The composition root: the engine RECEIVES its factories, validator, and
-/// dispatcher (pure DI, no global singletons). `load` verifies, decodes, and
-/// validates a source into a screen root, failing closed on any error.
+/// Holds the component and screen factories, the schema validator, and the action
+/// dispatcher. `load` fetches a source, verifies its signature, decodes the JSON,
+/// and validates it, returning the screen's root node or a failure state — it
+/// never throws to the caller.
 @MainActor
 public struct MurtiEngine {
     public let componentFactory: MurtiComponentFactory

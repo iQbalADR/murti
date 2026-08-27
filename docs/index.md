@@ -26,14 +26,14 @@ dependencies: [
 import SwiftUI
 import MurtiCore
 
-// Build the engine once (composition root) — pure DI, no singletons.
+// Create the engine, giving it the component/screen factories and the action dispatcher.
 let engine = MurtiEngine(
     componentFactory: .withBuiltins,                 // text, image, vstack, hstack, button, card
     screenFactory: MurtiScreenFactory().register("home", data: homeJSON),
     actionDispatcher: MurtiActionDispatcher(network: MyNetworkClient(), navigator: MurtiNavigator())
 )
 
-// Render any screen by key — ONE generic view, driven entirely by JSON.
+// MurtiScreen loads the JSON registered for "home" and renders it.
 struct RootView: View {
     var body: some View {
         NavigationStack { MurtiScreen(.key("home"), engine: engine) }
