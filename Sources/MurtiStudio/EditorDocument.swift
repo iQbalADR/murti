@@ -53,4 +53,18 @@ final class EditorDocument {
         encoder.outputFormatting = [.sortedKeys]
         return try encoder.encode(payload)
     }
+
+    var canUndo: Bool { !undoStack.isEmpty }
+    var canRedo: Bool { !redoStack.isEmpty }
+
+    func undo() {
+        guard let previous = undoStack.popLast() else { return }
+        redoStack.append(root)
+        root = previous
+    }
+    func redo() {
+        guard let next = redoStack.popLast() else { return }
+        undoStack.append(root)
+        root = next
+    }
 }
