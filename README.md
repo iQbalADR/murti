@@ -237,6 +237,8 @@ simulator).
 
 - [Authoring screens](docs/authoring.md) — the MurtiBuilder DSL for writing
   screens in Swift, and MurtiGen for build-time JSON generation.
+- [Visual editor](docs/studio.md) — MurtiStudio, a SwiftUI app that edits the node
+  tree by direct manipulation and exports validated JSON.
 - [Payload schema & validation](docs/schema.md) — the authoritative JSON Schema,
   `schemaVersion` policy, bounds, and valid/invalid fixtures.
 - [Networking adapters](docs/networking.md) — the port + Alamofire / Moya /
