@@ -1,0 +1,157 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import Ajv2020 from "ajv/dist/2020";
+import { mapPayload, mapNode } from "../src/mapping";
+
+const schema = JSON.parse(
+  readFileSync(new URL("../../docs/murti.schema.json", import.meta.url), "utf8"),
+);
+const validate = new Ajv2020({ strict: false, allErrors: true }).compile(schema);
+
+function assertValidPayload(payload: unknown): void {
+  const ok = validate(payload);
+  assert.ok(ok, "payload should match murti.schema.json:\n" + JSON.stringify(validate.errors, null, 2));
+}
+
+test("a vertical auto-layout frame maps to a vstack with spacing and text children", () => {
+  const { payload } = mapPayload({
+    type: "FRAME",
+    name: "Home",
+    layoutMode: "VERTICAL",
+    itemSpacing: 12,
+    children: [{ type: "TEXT", name: "title", characters: "Hello", fontSize: 30 }],
+  });
+
+  assert.equal(payload.schemaVersion, "1.0");
+  assert.equal(payload.screen.key, "Home");
+  assert.equal(payload.screen.root.type, "vstack");
+  assert.deepEqual(payload.screen.root.props, { spacing: 12 });
+  assert.deepEqual(payload.screen.root.children?.[0], {
+    type: "text",
+    props: { value: "Hello", style: "title" },
+  });
+  assertValidPayload(payload);
+});
+
+test("a horizontal auto-layout frame maps to an hstack", () => {
+  const { payload } = mapPayload({ type: "FRAME", name: "Row", layoutMode: "HORIZONTAL", children: [] });
+  assert.equal(payload.screen.root.type, "hstack");
+  assertValidPayload(payload);
+});
+
+test("font size selects the text style", () => {
+  const styleOf = (fontSize: number) =>
+    (mapNode({ type: "TEXT", name: "t", characters: "x", fontSize }, [])?.props?.style);
+  assert.equal(styleOf(34), "title");
+  assert.equal(styleOf(22), "headline");
+  assert.equal(styleOf(16), "body");
+  assert.equal(styleOf(11), "caption");
+  assert.equal(mapNode({ type: "TEXT", name: "t", characters: "x" }, [])?.props?.style, undefined);
+});
+
+test("the button convention builds a navigate action from the layer name", () => {
+  const warnings: string[] = [];
+  const node = mapNode(
+    {
+      type: "FRAME",
+      name: "button:navigate:productDetail",
+      children: [{ type: "TEXT", name: "label", characters: "View details" }],
+    },
+    warnings,
+  );
+  assert.deepEqual(node, {
+    type: "button",
+    props: { title: "View details" },
+    action: { type: "navigate", screen: "productDetail" },
+  });
+  assert.equal(warnings.length, 0);
+});
+
+test("the api and dismiss conventions map to their actions", () => {
+  assert.deepEqual(
+    mapNode({ type: "FRAME", name: "button:api:getBalance", children: [] }, [])?.action,
+    { type: "api", request: "getBalance" },
+  );
+  assert.deepEqual(
+    mapNode({ type: "FRAME", name: "button:dismiss", children: [] }, [])?.action,
+    { type: "dismiss" },
+  );
+});
+
+test("a button whose action has no valid target drops the action and warns", () => {
+  const warnings: string[] = [];
+  const node = mapNode({ type: "FRAME", name: "button:navigate", children: [] }, warnings);
+  assert.equal(node?.type, "button");
+  assert.equal(node?.action, undefined);
+  assert.equal(warnings.length, 1);
+});
+
+test("token text is copied through verbatim", () => {
+  const node = mapNode({ type: "TEXT", name: "greeting", characters: "Hello, {{user.name}}" }, []);
+  assert.equal(node?.props?.value, "Hello, {{user.name}}");
+});
+
+test("a rectangle maps to an image named after the layer", () => {
+  assert.deepEqual(mapNode({ type: "RECTANGLE", name: "Hero" }, []), {
+    type: "image",
+    props: { name: "Hero" },
+  });
+});
+
+test("a hidden layer is skipped and dropped from its parent's children", () => {
+  assert.equal(mapNode({ type: "TEXT", name: "x", visible: false, characters: "hi" }, []), null);
+
+  const { payload } = mapPayload({
+    type: "FRAME",
+    name: "F",
+    layoutMode: "VERTICAL",
+    children: [
+      { type: "TEXT", name: "a", characters: "A" },
+      { type: "TEXT", name: "b", visible: false, characters: "B" },
+    ],
+  });
+  assert.equal(payload.screen.root.children?.length, 1);
+});
+
+test("an unsupported layer becomes an empty text placeholder with a warning", () => {
+  const warnings: string[] = [];
+  const node = mapNode({ type: "SLICE", name: "weird" }, warnings);
+  assert.deepEqual(node, { type: "text", props: { value: "" } });
+  assert.equal(warnings.length, 1);
+});
+
+test("the screen key is sanitized to an identifier", () => {
+  assert.equal(mapPayload({ type: "FRAME", name: "Home Screen!", children: [] }).payload.screen.key, "HomeScreen");
+  assert.equal(mapPayload({ type: "FRAME", name: "123", children: [] }).payload.screen.key, "screen");
+});
+
+test("a full nested dashboard frame validates against the schema", () => {
+  const { payload, warnings } = mapPayload({
+    type: "FRAME",
+    name: "Dashboard",
+    layoutMode: "VERTICAL",
+    itemSpacing: 16,
+    children: [
+      { type: "TEXT", name: "heading", characters: "Hello, {{user.name}}", fontSize: 34 },
+      {
+        type: "FRAME",
+        name: "hstack",
+        layoutMode: "HORIZONTAL",
+        itemSpacing: 8,
+        children: [
+          { type: "RECTANGLE", name: "avatar" },
+          { type: "TEXT", name: "sub", characters: "Welcome back", fontSize: 17 },
+        ],
+      },
+      {
+        type: "FRAME",
+        name: "button:navigate:settings",
+        children: [{ type: "TEXT", name: "cta", characters: "Open settings" }],
+      },
+    ],
+  });
+
+  assert.equal(warnings.length, 0);
+  assertValidPayload(payload);
+});
