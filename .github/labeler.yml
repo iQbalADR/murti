@@ -10,6 +10,11 @@ gallery:
       - any-glob-to-any-file:
           - "Sources/MurtiGallery/**"
 
+figma:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "figma-plugin/**"
+
 tests:
   - changed-files:
       - any-glob-to-any-file:

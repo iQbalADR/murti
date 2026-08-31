@@ -44,6 +44,7 @@ nav:
   - Reference:
       - Authoring screens: authoring.md
       - Visual editor: studio.md
+      - Figma export: figma.md
       - Payload schema & validation: schema.md
       - Networking adapters: networking.md
 

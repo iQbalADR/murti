@@ -18,3 +18,20 @@ jobs:
       - run: swift --version
       - run: swift build
       - run: swift test
+
+  figma:
+    name: figma plugin (typecheck + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: figma-plugin/package-lock.json
+      - run: npm ci
+        working-directory: figma-plugin
+      - run: npm run typecheck
+        working-directory: figma-plugin
+      - run: npm test
+        working-directory: figma-plugin
