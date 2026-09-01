@@ -68,6 +68,10 @@ async function toInput(node: SceneNode): Promise<FigmaInput> {
   if ("cornerRadius" in node && typeof node.cornerRadius === "number") {
     input.cornerRadius = node.cornerRadius;
   }
+  if ("x" in node) input.x = node.x;
+  if ("y" in node) input.y = node.y;
+  if ("width" in node) input.width = node.width;
+  if ("height" in node) input.height = node.height;
 
   const fill = solidFillHex(node);
   if (fill) {

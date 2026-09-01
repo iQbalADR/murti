@@ -29,7 +29,7 @@ shows the JSON to copy, plus any warnings.
 | Auto-layout frame, vertical | `vstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
 | Auto-layout frame, horizontal | `hstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
 | Frame with a solid fill and rounded corners | `card` (auto-layout padding → `padding`) |
-| Other frame / group / component / instance | `vstack` |
+| Frame without auto-layout, or a group | `zstack` (frame size + each child's `x`/`y`/`width`/`height`) |
 | Text | `text` (characters → `value`; named text style, else font size → `style`) |
 | Rectangle / ellipse / vector | `image` (layer name → `name`; image-fill scale `FILL` → `contentMode: fill`) |
 | Hidden layer | skipped |

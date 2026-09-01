@@ -142,6 +142,21 @@ these never break an older client.
 The `props` bag is open, so these need no schema change; they're bounded by the
 components that read them, not by the structural schema.
 
+## Overlays (`zstack`)
+
+Most layout flows (stacks). A `zstack` instead **overlays** its children, and with a
+frame size plus per-child position it reproduces an absolutely-positioned design (a
+hero image with content layered on top).
+
+| Prop | On | Meaning |
+| --- | --- | --- |
+| `width` / `height` | `zstack` | the source frame's size — the coordinate space |
+| `x` / `y` | a `zstack` child | the child's top-left within that space |
+| `width` / `height` | a `zstack` child | the child's size |
+
+The `zstack` scales its whole frame to the available width, so the layout keeps its
+proportions on any device. Without a `width`/`height` it's a plain centered overlay.
+
 ---
 
 ## Manifest

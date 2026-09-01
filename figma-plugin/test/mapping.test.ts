@@ -181,6 +181,55 @@ test("a filled stack carries its background color", () => {
   assert.equal(node?.props?.spacing, 8);
 });
 
+test("a non-auto-layout frame maps to a zstack with absolutely positioned children", () => {
+  const node = mapNode(
+    {
+      type: "FRAME",
+      name: "Logged out",
+      width: 375,
+      height: 812,
+      children: [
+        { type: "RECTANGLE", name: "bg", x: 0, y: 0, width: 375, height: 812, imageScaleMode: "FILL" },
+        { type: "TEXT", name: "cta", characters: "LOG IN", x: 24, y: 748, width: 150, height: 48 },
+      ],
+    },
+    [],
+  );
+  assert.equal(node?.type, "zstack");
+  assert.deepEqual(node?.props, { width: 375, height: 812 });
+
+  const bg = node?.children?.[0];
+  assert.equal(bg?.type, "image");
+  assert.deepEqual(
+    { x: bg?.props?.x, y: bg?.props?.y, width: bg?.props?.width, height: bg?.props?.height },
+    { x: 0, y: 0, width: 375, height: 812 },
+  );
+
+  const cta = node?.children?.[1];
+  assert.equal(cta?.type, "text");
+  assert.deepEqual({ x: cta?.props?.x, y: cta?.props?.y }, { x: 24, y: 748 });
+  assert.equal(cta?.props?.value, "LOG IN");
+});
+
+test("a group maps to a zstack", () => {
+  const node = mapNode(
+    { type: "GROUP", name: "logo", width: 120, height: 40, children: [{ type: "VECTOR", name: "mark", x: 0, y: 0, width: 40, height: 40 }] },
+    [],
+  );
+  assert.equal(node?.type, "zstack");
+  assert.equal(node?.children?.[0]?.type, "image");
+});
+
+test("positions round to whole numbers", () => {
+  const node = mapNode(
+    { type: "FRAME", name: "f", width: 100.6, height: 50.2, children: [{ type: "TEXT", name: "t", characters: "x", x: 10.4, y: 20.7, width: 30.9, height: 12.1 }] },
+    [],
+  );
+  assert.deepEqual(node?.props, { width: 101, height: 50 });
+  const child = node?.children?.[0];
+  assert.deepEqual({ x: child?.props?.x, y: child?.props?.y }, { x: 10, y: 21 });
+});
+
 test("text carries color and weight", () => {
   const node = mapNode(
     { type: "TEXT", name: "t", characters: "Rp150.000", textColor: "#FFFFFF", fontStyle: "Semi Bold" },

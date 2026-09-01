@@ -54,6 +54,7 @@ public extension MurtiComponentFactory {
             .register(ImageComponent())
             .register(VStackComponent())
             .register(HStackComponent())
+            .register(ZStackComponent())
             .register(ButtonComponent())
             .register(CardComponent())
     }
