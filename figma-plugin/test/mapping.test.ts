@@ -126,6 +126,86 @@ test("the screen key is sanitized to an identifier", () => {
   assert.equal(mapPayload({ type: "FRAME", name: "123", children: [] }).payload.screen.key, "screen");
 });
 
+test("cross-axis alignment maps to the stack alignment prop", () => {
+  const vstack = mapNode(
+    { type: "FRAME", name: "col", layoutMode: "VERTICAL", counterAxisAlignItems: "MIN" },
+    [],
+  );
+  assert.equal(vstack?.props?.alignment, "leading");
+
+  const hstack = mapNode(
+    { type: "FRAME", name: "row", layoutMode: "HORIZONTAL", counterAxisAlignItems: "MAX" },
+    [],
+  );
+  assert.equal(hstack?.props?.alignment, "bottom");
+
+  // Center is the renderer default and is left off.
+  const centered = mapNode(
+    { type: "FRAME", name: "c", layoutMode: "VERTICAL", counterAxisAlignItems: "CENTER" },
+    [],
+  );
+  assert.equal(centered?.props?.alignment, undefined);
+});
+
+test("a frame with a background and rounded corners maps to a card with padding", () => {
+  const node = mapNode(
+    {
+      type: "FRAME",
+      name: "panel",
+      layoutMode: "VERTICAL",
+      hasBackground: true,
+      cornerRadius: 12,
+      padding: 20,
+      children: [{ type: "TEXT", name: "t", characters: "Body" }],
+    },
+    [],
+  );
+  assert.equal(node?.type, "card");
+  assert.deepEqual(node?.props, { padding: 20 });
+  assert.equal(node?.children?.length, 1);
+  assertValidPayload({ schemaVersion: "1.0", screen: { key: "s", root: node! } });
+});
+
+test("a rounded background without a fill stays a stack", () => {
+  const node = mapNode({ type: "FRAME", name: "x", layoutMode: "VERTICAL", cornerRadius: 12 }, []);
+  assert.equal(node?.type, "vstack");
+});
+
+test("an image fill set to fill maps to contentMode fill", () => {
+  const node = mapNode({ type: "RECTANGLE", name: "hero", imageScaleMode: "FILL" }, []);
+  assert.deepEqual(node, { type: "image", props: { name: "hero", contentMode: "fill" } });
+});
+
+test("the image:systemName convention maps to an SF Symbol", () => {
+  const node = mapNode({ type: "RECTANGLE", name: "image:systemName:star.fill" }, []);
+  assert.deepEqual(node, { type: "image", props: { systemName: "star.fill" } });
+});
+
+test("an instance's type is inferred from its main component name", () => {
+  const node = mapNode(
+    {
+      type: "INSTANCE",
+      name: "Primary CTA",
+      mainComponentName: "button:navigate:checkout",
+      children: [{ type: "TEXT", name: "label", characters: "Continue" }],
+    },
+    [],
+  );
+  assert.deepEqual(node, {
+    type: "button",
+    props: { title: "Continue" },
+    action: { type: "navigate", screen: "checkout" },
+  });
+});
+
+test("a named text style overrides the font-size heuristic", () => {
+  const node = mapNode(
+    { type: "TEXT", name: "h", characters: "Hi", fontSize: 12, textStyleName: "Heading / Large" },
+    [],
+  );
+  assert.equal(node?.props?.style, "headline");
+});
+
 test("a full nested dashboard frame validates against the schema", () => {
   const { payload, warnings } = mapPayload({
     type: "FRAME",
