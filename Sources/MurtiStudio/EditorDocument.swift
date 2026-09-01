@@ -1,5 +1,6 @@
 import Foundation
 import MurtiCore
+import MurtiBuilder
 import Observation
 
 /// The editable screen: a `MurtiNode` tree where every node has an id, the current
@@ -56,6 +57,12 @@ final class EditorDocument {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         return try encoder.encode(payload)
+    }
+
+    /// MurtiBuilder DSL source for the current tree. Node ids aren't emitted (the
+    /// DSL doesn't set them), matching JSON export.
+    func exportDSLSource() -> String {
+        DSLExport.source(forScreen: key, root: root)
     }
 
     var canUndo: Bool { !undoStack.isEmpty }

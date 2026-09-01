@@ -25,7 +25,7 @@ let package = Package(
         .target(name: "MurtiBuilder", dependencies: ["MurtiCore"]),
         .executableTarget(name: "MurtiGallery", dependencies: ["MurtiCore"]),
         .executableTarget(name: "MurtiGen", dependencies: ["MurtiBuilder", "MurtiCore"]),
-        .executableTarget(name: "MurtiStudio", dependencies: ["MurtiCore"]),
+        .executableTarget(name: "MurtiStudio", dependencies: ["MurtiCore", "MurtiBuilder"]),
         .testTarget(name: "MurtiCoreTests", dependencies: ["MurtiCore"]),
         .testTarget(name: "MurtiBuilderTests", dependencies: ["MurtiBuilder"]),
         .testTarget(name: "MurtiGenTests", dependencies: ["MurtiGen", "MurtiBuilder", "MurtiCore"]),
