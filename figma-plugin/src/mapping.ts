@@ -1,6 +1,10 @@
 // Maps a Figma layer tree to a Murti SDUI payload. Kept free of the Figma plugin
 // API so it can be unit-tested with plain objects; `code.ts` reads the real
 // document into `FigmaInput` and calls in here.
+//
+// Every prop this emits is one the built-in components actually read (see
+// Sources/MurtiCore/BuiltinComponents.swift): text value/style, image
+// systemName/name/contentMode, stack alignment/spacing, button title, card padding.
 
 export type MurtiValue =
   | string
@@ -34,15 +38,23 @@ export interface MurtiPayload {
 }
 
 /// The subset of a Figma node the mapping needs. `code.ts` fills this in from the
-/// real `SceneNode`.
+/// real `SceneNode`, resolving the async bits (main component name, text style
+/// name) and the paint checks up front so the mapping stays synchronous and pure.
 export interface FigmaInput {
   type: string;
   name: string;
   visible?: boolean;
   layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL" | "GRID";
   itemSpacing?: number;
+  counterAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "BASELINE";
+  padding?: number;
+  cornerRadius?: number;
+  hasBackground?: boolean;
   characters?: string;
   fontSize?: number;
+  textStyleName?: string;
+  imageScaleMode?: string;
+  mainComponentName?: string;
   children?: FigmaInput[];
 }
 
@@ -58,6 +70,7 @@ export interface MapResult {
 const TYPE_KEYWORDS = new Set(["text", "image", "button", "card", "vstack", "hstack"]);
 const CONTAINER_FIGMA = new Set(["FRAME", "GROUP", "COMPONENT", "INSTANCE", "COMPONENT_SET", "SECTION"]);
 const GRAPHIC_FIGMA = new Set(["RECTANGLE", "ELLIPSE", "VECTOR", "LINE", "STAR", "POLYGON", "BOOLEAN_OPERATION"]);
+const SYSTEM_IMAGE_VERBS = new Set(["system", "systemname", "sf"]);
 
 /// Map a selected frame to a full payload, defaulting the schema version and
 /// deriving the screen key from the frame name.
@@ -75,12 +88,13 @@ export function mapPayload(root: FigmaInput, options: MapOptions = {}): MapResul
 }
 
 /// Map one Figma node to a Murti node. Returns `null` for a hidden layer (the
-/// caller drops it). A layer name may force the type and, for buttons, the action
-/// via a `type:verb:target` convention; otherwise the Figma node type decides.
+/// caller drops it). The type comes from a `type:verb:target` layer-name
+/// convention — taken from the layer, or an instance's main component — otherwise
+/// from the Figma node type.
 export function mapNode(node: FigmaInput, warnings: string[]): MurtiNode | null {
   if (node.visible === false) return null;
 
-  const convention = parseConvention(node.name);
+  const convention = resolveConvention(node);
   switch (convention.type) {
     case "button":
       return mapButton(node, convention, warnings);
@@ -96,7 +110,9 @@ export function mapNode(node: FigmaInput, warnings: string[]): MurtiNode | null 
   }
 
   if (node.type === "TEXT") return mapText(node);
-  if (CONTAINER_FIGMA.has(node.type)) return mapContainer(node, stackTypeFor(node), warnings);
+  if (CONTAINER_FIGMA.has(node.type)) {
+    return mapContainer(node, isCardLike(node) ? "card" : stackTypeFor(node), warnings);
+  }
   if (GRAPHIC_FIGMA.has(node.type)) return mapImage(node);
 
   warnings.push(`Unsupported layer "${node.name}" (${node.type}) exported as an empty text placeholder.`);
@@ -105,20 +121,28 @@ export function mapNode(node: FigmaInput, warnings: string[]): MurtiNode | null 
 
 function mapText(node: FigmaInput): MurtiNode {
   const props: Record<string, MurtiValue> = { value: node.characters ?? "" };
-  const style = styleForFontSize(node.fontSize);
+  const style = styleForName(node.textStyleName) ?? styleForFontSize(node.fontSize);
   if (style) props.style = style;
   return { type: "text", props };
 }
 
 function mapImage(node: FigmaInput): MurtiNode {
-  return { type: "image", props: { name: node.name.trim() } };
+  return { type: "image", props: imageProps(node) };
 }
 
 function mapContainer(node: FigmaInput, type: "vstack" | "hstack" | "card", warnings: string[]): MurtiNode {
   const result: MurtiNode = { type };
-  if (type !== "card" && typeof node.itemSpacing === "number") {
-    result.props = { spacing: node.itemSpacing };
+  const props: Record<string, MurtiValue> = {};
+
+  if (type === "card") {
+    if (typeof node.padding === "number") props.padding = node.padding;
+  } else {
+    if (typeof node.itemSpacing === "number") props.spacing = node.itemSpacing;
+    const alignment = alignmentFor(node, type);
+    if (alignment) props.alignment = alignment;
   }
+
+  if (Object.keys(props).length > 0) result.props = props;
   const children = mapChildren(node, warnings);
   if (children.length > 0) result.children = children;
   return result;
@@ -138,10 +162,39 @@ function mapChildren(node: FigmaInput, warnings: string[]): MurtiNode[] {
     .filter((child): child is MurtiNode => child !== null);
 }
 
+function imageProps(node: FigmaInput): Record<string, MurtiValue> {
+  const props: Record<string, MurtiValue> = {};
+  const parts = node.name.split(":").map((part) => part.trim());
+
+  if (parts[0]?.toLowerCase() === "image" && parts.length > 1) {
+    if (SYSTEM_IMAGE_VERBS.has(parts[1].toLowerCase())) {
+      if (parts[2]) props.systemName = parts[2];
+    } else {
+      props.name = parts.slice(1).join(":");
+    }
+  }
+  if (props.systemName === undefined && props.name === undefined) {
+    props.name = node.name.trim();
+  }
+  if (node.imageScaleMode === "FILL") props.contentMode = "fill";
+  return props;
+}
+
 interface Convention {
   type?: string;
   verb?: string;
   target?: string;
+}
+
+/// The convention from the layer's own name, or, for a component instance whose
+/// layer was renamed, from its main component's name.
+function resolveConvention(node: FigmaInput): Convention {
+  const own = parseConvention(node.name);
+  if (own.type) return own;
+  if ((node.type === "INSTANCE" || node.type === "COMPONENT") && node.mainComponentName) {
+    return parseConvention(node.mainComponentName);
+  }
+  return {};
 }
 
 function parseConvention(name: string): Convention {
@@ -181,6 +234,35 @@ function dropAction(name: string, verb: string, warnings: string[]): undefined {
 
 function stackTypeFor(node: FigmaInput): "vstack" | "hstack" {
   return node.layoutMode === "HORIZONTAL" ? "hstack" : "vstack";
+}
+
+/// A frame with a background fill and rounded corners reads as a card rather than a
+/// bare stack.
+function isCardLike(node: FigmaInput): boolean {
+  return node.hasBackground === true && typeof node.cornerRadius === "number" && node.cornerRadius > 0;
+}
+
+/// Figma's cross-axis alignment mapped to the stack's `alignment` prop. `center` is
+/// the renderer default, so it's left off.
+function alignmentFor(node: FigmaInput, type: "vstack" | "hstack"): string | undefined {
+  switch (node.counterAxisAlignItems) {
+    case "MIN":
+      return type === "vstack" ? "leading" : "top";
+    case "MAX":
+      return type === "vstack" ? "trailing" : "bottom";
+    default:
+      return undefined;
+  }
+}
+
+function styleForName(name?: string): string | undefined {
+  if (!name) return undefined;
+  const lowered = name.toLowerCase();
+  if (lowered.includes("title")) return "title";
+  if (lowered.includes("headline") || lowered.includes("heading")) return "headline";
+  if (lowered.includes("caption") || lowered.includes("footnote")) return "caption";
+  if (lowered.includes("body")) return "body";
+  return undefined;
 }
 
 function styleForFontSize(size?: number): string | undefined {

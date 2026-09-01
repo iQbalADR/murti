@@ -35,16 +35,18 @@ plain shape and shows the result.
 
 | Figma layer | Murti node |
 | --- | --- |
-| Auto-layout frame, vertical | `vstack` (item spacing → `spacing`) |
-| Auto-layout frame, horizontal | `hstack` (item spacing → `spacing`) |
+| Auto-layout frame, vertical | `vstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
+| Auto-layout frame, horizontal | `hstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
+| Frame with a background fill and rounded corners | `card` (auto-layout padding → `padding`) |
 | Other frame / group / component / instance | `vstack` |
-| Text | `text` (characters → `value`, font size → `style`) |
-| Rectangle / ellipse / vector | `image` (layer name → `name`) |
+| Text | `text` (characters → `value`; named text style, else font size → `style`) |
+| Rectangle / ellipse / vector | `image` (layer name → `name`; image-fill scale `FILL` → `contentMode: fill`) |
 | Hidden layer | skipped |
 | Anything else | empty `text` placeholder + a warning |
 
-Font size picks the text style: ≥28 → `title`, ≥20 → `headline`, ≥15 → `body`,
-otherwise `caption`.
+The text style comes from the layer's named text style when its name contains
+`title`, `heading`, `caption`, or `body`; otherwise font size decides: ≥28 →
+`title`, ≥20 → `headline`, ≥15 → `body`, otherwise `caption`.
 
 ## Actions and tokens
 
@@ -57,11 +59,16 @@ name, formatted `type:verb:target`:
 | `button:api:getBalance` | button with an `api` action calling the `getBalance` request |
 | `button:openurl:supportChat` | button with an `openURL` action to the named `supportChat` link |
 | `button:dismiss`, `button:refresh` | button with that action |
+| `image:systemName:star.fill` | image rendering the `star.fill` SF Symbol |
 | `card`, `vstack`, `hstack`, `text`, `image` | forces that node type |
 
 A button's title is its first text layer, falling back to the target, then the layer
 name. Targets are sanitized to Murti identifiers; a button whose action has no valid
 target keeps the button but drops the action (with a warning).
+
+The convention is read from the layer name, or, for a renamed component instance,
+from its main component's name — so a library component named `button` (or
+`button:navigate:…`) maps correctly even when the instance is renamed.
 
 Data tokens are authored literally: text such as `Hello, {{user.name}}` is copied
 through verbatim and resolved by the app at render time.
