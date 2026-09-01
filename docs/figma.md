@@ -1,9 +1,15 @@
 # Figma export
 
+> **Status: experimental.** This turns a design into a *starting point* — rough
+> structural scaffolding you then refine — not a pixel-accurate conversion. For
+> authoring real screens, use the [MurtiBuilder DSL](authoring.md) or
+> [MurtiStudio](studio.md), which produce clean, validated payloads directly. See
+> [what it can't do](#what-it-cant-do).
+
 The Figma plugin in [`figma-plugin/`](https://github.com/iQbalADR/murti/tree/main/figma-plugin)
-turns the selected frame into a validated Murti payload, so a design can become a
-Murti screen without writing JSON by hand. It targets `murti.schema.json` directly,
-and its tests validate every mapping against that schema.
+maps the selected frame to a validated Murti payload, so a design can become an
+approximate Murti screen without writing JSON by hand. It targets
+`murti.schema.json` directly, and its tests validate every mapping against it.
 
 The mapping is lossy by design: Murti has a closed component vocabulary, so only the
 layers that map to a component are exported. Anything else produces a warning.
@@ -77,3 +83,23 @@ renamed component instance, from its main component's name.
 
 Data tokens are authored literally: text such as `Hello, {{user.name}}` is copied
 through verbatim and resolved by the app at render time.
+
+## What it can't do
+
+A generic frame-to-JSON export can't reach pixel parity with a design — the same
+limit every Figma-to-code tool has, made sharper by Murti's deliberately closed
+vocabulary. Expect rough structural scaffolding, not a finished screen:
+
+- **Bespoke art** (logos, illustrations, gradients, the exact shape of a card) has no
+  generic representation. Turn on **Embed images** for a pixel preview, or supply the
+  real assets in the app.
+- **Semantic intent** isn't in the pixels — a "button" is just a styled frame, so it
+  won't become a real `button` unless the layer follows the naming convention.
+- **Design-file cruft** (status-bar mockups, device chrome) is exported as content;
+  leave it out of the frame you select.
+- **Absolute text boxes** can clip, because SwiftUI's font metrics differ from Figma's.
+
+For production-accurate design import, build a shared component library — Figma
+components matched 1:1 (by name and properties) to registered Murti components — and
+assemble screens from instances. Accuracy then comes from the components being
+pre-built, not from reconstruction.

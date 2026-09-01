@@ -236,11 +236,12 @@ simulator).
 ## Docs
 
 - [Authoring screens](docs/authoring.md) — the MurtiBuilder DSL for writing
-  screens in Swift, and MurtiGen for build-time JSON generation.
+  screens in Swift, and MurtiGen for build-time JSON generation. **Primary path.**
 - [Visual editor](docs/studio.md) — MurtiStudio, a SwiftUI app that edits the node
-  tree by direct manipulation and exports validated JSON.
-- [Figma export](docs/figma.md) — a Figma plugin that maps the selected frame to a
-  validated Murti payload.
+  tree by direct manipulation and exports validated JSON. **Primary path.**
+- [Figma export](docs/figma.md) — *experimental.* A Figma plugin that turns a frame
+  into rough scaffolding (not a pixel-accurate conversion); prefer the DSL or
+  MurtiStudio above for real screens.
 - [Payload schema & validation](docs/schema.md) — the authoritative JSON Schema,
   `schemaVersion` policy, bounds, and valid/invalid fixtures.
 - [Networking adapters](docs/networking.md) — the port + Alamofire / Moya /
