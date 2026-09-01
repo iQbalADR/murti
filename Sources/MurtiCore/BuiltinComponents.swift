@@ -90,6 +90,54 @@ struct HStackComponent: MurtiComponent {
     }
 }
 
+// MARK: - zstack
+
+/// Overlays children. With a `width`/`height` (the source frame's size) and `x`/`y`/
+/// `width`/`height` on each child, it places them at absolute positions and scales
+/// the whole frame to the available width — reproducing a Figma frame that layers
+/// content instead of flowing it. Without a frame size it's a plain centered overlay.
+struct ZStackComponent: MurtiComponent {
+    static let type = "zstack"
+    func makeView(_ node: MurtiNode, context: MurtiRenderContext) -> AnyView {
+        let width = node.value("width")?.doubleValue ?? 0
+        let height = node.value("height")?.doubleValue ?? 0
+        guard width > 0, height > 0 else {
+            return AnyView(
+                ZStack { MurtiChildren(node: node, context: context) }
+                    .murtiStyle(node)
+                    .murtiAccessibility(node, context: context)
+            )
+        }
+        let children = node.children
+        return AnyView(
+            GeometryReader { proxy in
+                let scale = proxy.size.width / width
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(children.enumerated()), id: \.offset) { _, child in
+                        let box = childBox(child, frameWidth: width, frameHeight: height)
+                        context.view(for: child)
+                            .frame(width: box.width, height: box.height)
+                            .position(x: box.midX, y: box.midY)
+                    }
+                }
+                .frame(width: width, height: height, alignment: .topLeading)
+                .scaleEffect(scale, anchor: .topLeading)
+            }
+            .aspectRatio(width / height, contentMode: .fit)
+            .murtiStyle(node)
+            .murtiAccessibility(node, context: context)
+        )
+    }
+}
+
+func childBox(_ node: MurtiNode, frameWidth: Double, frameHeight: Double) -> CGRect {
+    let x = node.value("x")?.doubleValue ?? 0
+    let y = node.value("y")?.doubleValue ?? 0
+    let w = node.value("width")?.doubleValue ?? frameWidth
+    let h = node.value("height")?.doubleValue ?? frameHeight
+    return CGRect(x: x, y: y, width: w, height: h)
+}
+
 // MARK: - button
 
 struct ButtonComponent: MurtiComponent {

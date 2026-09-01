@@ -49,6 +49,10 @@ export interface FigmaInput {
   counterAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "BASELINE";
   padding?: number;
   cornerRadius?: number;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
   fillColor?: string;
   textColor?: string;
   fontStyle?: string;
@@ -114,7 +118,10 @@ export function mapNode(node: FigmaInput, warnings: string[]): MurtiNode | null 
 
   if (node.type === "TEXT") return mapText(node);
   if (CONTAINER_FIGMA.has(node.type)) {
-    return mapContainer(node, isCardLike(node) ? "card" : stackTypeFor(node), warnings);
+    if (isCardLike(node)) return mapContainer(node, "card", warnings);
+    if (node.layoutMode === "HORIZONTAL") return mapContainer(node, "hstack", warnings);
+    if (node.layoutMode === "VERTICAL") return mapContainer(node, "vstack", warnings);
+    return mapZStack(node, warnings);   // no auto-layout → absolutely positioned overlay
   }
   if (GRAPHIC_FIGMA.has(node.type)) return mapImage(node);
 
@@ -154,6 +161,36 @@ function mapContainer(node: FigmaInput, type: "vstack" | "hstack" | "card", warn
   const children = mapChildren(node, warnings);
   if (children.length > 0) result.children = children;
   return result;
+}
+
+/// A frame without auto-layout: children are placed by absolute position, so it
+/// maps to a `zstack` carrying the frame size, and each child carries its
+/// `x`/`y`/`width`/`height`.
+function mapZStack(node: FigmaInput, warnings: string[]): MurtiNode {
+  const result: MurtiNode = { type: "zstack" };
+  const props: Record<string, MurtiValue> = {};
+  if (typeof node.width === "number") props.width = Math.round(node.width);
+  if (typeof node.height === "number") props.height = Math.round(node.height);
+  if (node.fillColor) props.background = node.fillColor;
+  if (typeof node.cornerRadius === "number" && node.cornerRadius > 0) props.cornerRadius = node.cornerRadius;
+  if (Object.keys(props).length > 0) result.props = props;
+
+  const children: MurtiNode[] = [];
+  for (const childInput of node.children ?? []) {
+    const child = mapNode(childInput, warnings);
+    if (child) children.push(withPosition(child, childInput));
+  }
+  if (children.length > 0) result.children = children;
+  return result;
+}
+
+function withPosition(child: MurtiNode, input: FigmaInput): MurtiNode {
+  const props: Record<string, MurtiValue> = { ...(child.props ?? {}) };
+  if (typeof input.x === "number") props.x = Math.round(input.x);
+  if (typeof input.y === "number") props.y = Math.round(input.y);
+  if (typeof input.width === "number") props.width = Math.round(input.width);
+  if (typeof input.height === "number") props.height = Math.round(input.height);
+  return { ...child, props };
 }
 
 function mapButton(node: FigmaInput, convention: Convention, warnings: string[]): MurtiNode {

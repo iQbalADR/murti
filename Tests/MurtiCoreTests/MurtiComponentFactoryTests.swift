@@ -27,7 +27,7 @@ struct MurtiComponentFactoryTests {
 
     @Test func builtinsAreAllRegistered() {
         let factory = MurtiComponentFactory.withBuiltins
-        #expect(factory.registeredTypes == ["button", "card", "hstack", "image", "text", "vstack"])
+        #expect(factory.registeredTypes == ["button", "card", "hstack", "image", "text", "vstack", "zstack"])
     }
 
     @Test func lastRegistrationWinsForSameType() {
