@@ -28,7 +28,7 @@ shows the JSON to copy, plus any warnings.
 | --- | --- |
 | Auto-layout frame, vertical | `vstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
 | Auto-layout frame, horizontal | `hstack` (item spacing → `spacing`, cross-axis alignment → `alignment`) |
-| Frame with a background fill and rounded corners | `card` (auto-layout padding → `padding`) |
+| Frame with a solid fill and rounded corners | `card` (auto-layout padding → `padding`) |
 | Other frame / group / component / instance | `vstack` |
 | Text | `text` (characters → `value`; named text style, else font size → `style`) |
 | Rectangle / ellipse / vector | `image` (layer name → `name`; image-fill scale `FILL` → `contentMode: fill`) |
@@ -38,6 +38,11 @@ shows the JSON to copy, plus any warnings.
 The text style comes from the layer's named text style when its name contains
 `title`, `heading`, `caption`, or `body`; otherwise font size decides: ≥28 →
 `title`, ≥20 → `headline`, ≥15 → `body`, otherwise `caption`.
+
+Visual style is captured into the [bounded style props](schema.md#style-props): a
+solid fill → `background`, a corner radius → `cornerRadius`, a text layer's fill →
+`color`, and its font style → `weight`. So an exported screen carries its colors and
+type weights, not just its structure.
 
 ## Actions and tokens
 

@@ -10,11 +10,22 @@ struct TextComponent: MurtiComponent {
     func makeView(_ node: MurtiNode, context: MurtiRenderContext) -> AnyView {
         AnyView(
             Text(context.resolve(node.string("value")))
-                .font(Self.font(node.string("style")))
+                .font(Self.font(node))
+                .modifier(MurtiForegroundColor(hex: node.string("color")))
+                .murtiStyle(node)
                 .murtiAccessibility(node, context: context)
         )
     }
-    private static func font(_ style: String) -> Font {
+    /// The font from `style`, with an optional explicit `size` and `weight`.
+    private static func font(_ node: MurtiNode) -> Font {
+        let weight = murtiFontWeight(node.string("weight"))
+        if let size = node.value("size")?.doubleValue {
+            return .system(size: size, weight: weight ?? .regular)
+        }
+        let base = styleFont(node.string("style"))
+        return weight.map { base.weight($0) } ?? base
+    }
+    private static func styleFont(_ style: String) -> Font {
         switch style {
         case "title": .title
         case "headline": .headline
@@ -37,6 +48,7 @@ struct ImageComponent: MurtiComponent {
             return AnyView(
                 Image(systemName: systemName)
                     .imageScale(.large)
+                    .murtiStyle(node)
                     .murtiAccessibility(node, context: context)
             )
         }
@@ -44,6 +56,7 @@ struct ImageComponent: MurtiComponent {
             Image(node.string("name"))
                 .resizable()
                 .aspectRatio(contentMode: node.string("contentMode") == "fill" ? .fill : .fit)
+                .murtiStyle(node)
                 .murtiAccessibility(node, context: context)
         )
     }
@@ -58,6 +71,7 @@ struct VStackComponent: MurtiComponent {
             VStack(alignment: horizontalAlignment(node.string("alignment")), spacing: spacing(node)) {
                 MurtiChildren(node: node, context: context)
             }
+            .murtiStyle(node)
             .murtiAccessibility(node, context: context)
         )
     }
@@ -70,6 +84,7 @@ struct HStackComponent: MurtiComponent {
             HStack(alignment: verticalAlignment(node.string("alignment")), spacing: spacing(node)) {
                 MurtiChildren(node: node, context: context)
             }
+            .murtiStyle(node)
             .murtiAccessibility(node, context: context)
         )
     }
@@ -84,6 +99,7 @@ struct ButtonComponent: MurtiComponent {
             Button(context.resolve(node.string("title"))) {
                 if let action = node.action { context.dispatch(action) }
             }
+            .murtiStyle(node)
             .murtiAccessibility(node, context: context)
         )
     }
@@ -94,14 +110,19 @@ struct ButtonComponent: MurtiComponent {
 struct CardComponent: MurtiComponent {
     static let type = "card"
     func makeView(_ node: MurtiNode, context: MurtiRenderContext) -> AnyView {
+        // A card's grey box is the default; `background`, `cornerRadius`, `padding`,
+        // and `foreground` props override it.
         let padding = node.value("padding")?.doubleValue.map { CGFloat($0) } ?? 16
+        let radius = node.value("cornerRadius")?.doubleValue.map { CGFloat($0) } ?? 12
+        let background = Color(murtiHex: node.string("background")) ?? Color.secondary.opacity(0.12)
         return AnyView(
             VStack(alignment: .leading, spacing: 8) {
                 MurtiChildren(node: node, context: context)
             }
             .padding(padding)
-            .background(Color.secondary.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(background)
+            .clipShape(RoundedRectangle(cornerRadius: radius))
+            .modifier(MurtiForegroundColor(hex: node.string("foreground")))
             .murtiAccessibility(node, context: context)
         )
     }

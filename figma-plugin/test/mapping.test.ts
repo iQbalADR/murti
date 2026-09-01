@@ -147,13 +147,13 @@ test("cross-axis alignment maps to the stack alignment prop", () => {
   assert.equal(centered?.props?.alignment, undefined);
 });
 
-test("a frame with a background and rounded corners maps to a card with padding", () => {
+test("a frame with a fill and rounded corners maps to a card with the captured style", () => {
   const node = mapNode(
     {
       type: "FRAME",
       name: "panel",
       layoutMode: "VERTICAL",
-      hasBackground: true,
+      fillColor: "#EB6D00",
       cornerRadius: 12,
       padding: 20,
       children: [{ type: "TEXT", name: "t", characters: "Body" }],
@@ -161,14 +161,38 @@ test("a frame with a background and rounded corners maps to a card with padding"
     [],
   );
   assert.equal(node?.type, "card");
-  assert.deepEqual(node?.props, { padding: 20 });
+  assert.deepEqual(node?.props, { padding: 20, background: "#EB6D00", cornerRadius: 12 });
   assert.equal(node?.children?.length, 1);
   assertValidPayload({ schemaVersion: "1.0", screen: { key: "s", root: node! } });
 });
 
-test("a rounded background without a fill stays a stack", () => {
+test("a rounded frame without a fill stays a stack", () => {
   const node = mapNode({ type: "FRAME", name: "x", layoutMode: "VERTICAL", cornerRadius: 12 }, []);
   assert.equal(node?.type, "vstack");
+});
+
+test("a filled stack carries its background color", () => {
+  const node = mapNode(
+    { type: "FRAME", name: "row", layoutMode: "HORIZONTAL", itemSpacing: 8, fillColor: "#112233" },
+    [],
+  );
+  assert.equal(node?.type, "hstack");
+  assert.equal(node?.props?.background, "#112233");
+  assert.equal(node?.props?.spacing, 8);
+});
+
+test("text carries color and weight", () => {
+  const node = mapNode(
+    { type: "TEXT", name: "t", characters: "Rp150.000", textColor: "#FFFFFF", fontStyle: "Semi Bold" },
+    [],
+  );
+  assert.equal(node?.props?.color, "#FFFFFF");
+  assert.equal(node?.props?.weight, "semibold");
+});
+
+test("a regular font weight is omitted", () => {
+  const node = mapNode({ type: "TEXT", name: "t", characters: "Body", fontStyle: "Regular" }, []);
+  assert.equal(node?.props?.weight, undefined);
 });
 
 test("an image fill set to fill maps to contentMode fill", () => {
