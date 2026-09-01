@@ -24,4 +24,17 @@ struct ImportExportTests {
             action: MurtiActionSpec(type: .openURL, link: "https://evil.example.com")))
         #expect(throws: MurtiError.self) { try d.exportJSON() }
     }
+    @Test func exportDSLProducesScreenSource() {
+        let d = EditorDocument(key: "home",
+            root: MurtiNode(type: "vstack", children: [MurtiNode(type: "text", props: ["value": .string("hi")])]))
+        let source = d.exportDSLSource()
+        let expected = """
+        Screen("home") {
+            VStack {
+                Text("hi")
+            }
+        }
+        """
+        #expect(source == expected)
+    }
 }

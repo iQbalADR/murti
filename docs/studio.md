@@ -43,3 +43,6 @@ prop to its current value) leaves the history untouched.
   for tracking are stripped from exported JSON. The editor can't tell an authored
   id apart from one it assigned, so ids present in imported JSON are not preserved
   on export.
+- **Export DSL** shows the tree as MurtiBuilder Swift source (see
+  [Export as DSL](authoring.md#export-as-dsl)), so a screen can round-trip back to
+  code.

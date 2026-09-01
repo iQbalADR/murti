@@ -27,6 +27,7 @@ struct StudioView: View {
                     .disabled(!document.canRedo)
                 Button("Import") { importText = ""; showImport = true }
                 Button("Export") { runExport() }
+                Button("Export DSL") { exportText = document.exportDSLSource(); showExport = true }
             }
         }
         .sheet(isPresented: $showImport) {

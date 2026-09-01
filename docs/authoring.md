@@ -64,6 +64,25 @@ a raw URL.
 screen-authoring files that `import MurtiBuilder` but not `SwiftUI`; if a file
 needs both, qualify the DSL type as `MurtiBuilder.Text`.
 
+## Export as DSL
+
+`DSLExport` runs the DSL in reverse: given a decoded tree (a `MurtiNode` or a full
+`MurtiPayload`), it generates MurtiBuilder source that rebuilds an equivalent tree.
+The [visual editor](studio.md) uses it for its **Export DSL** button, so a screen
+imported as JSON — or built by direct manipulation — can come back out as Swift.
+
+```swift
+import MurtiBuilder
+
+let source = DSLExport.source(for: payload)   // a String of MurtiBuilder code
+```
+
+A node is written with its typed initializer (`Text`, `VStack`, `Button`, …) when
+its props fit that initializer exactly; anything else falls back to the
+open-vocabulary `component("type", [props]) { … }` so no props are lost. Node ids
+aren't emitted (the DSL doesn't set them), matching JSON export. An action on a
+non-button has no DSL form, so it's omitted with a note in the output.
+
 ## Build-time generation
 
 `MurtiGen` writes each authored screen to `<key>.json`, validating every screen
