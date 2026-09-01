@@ -6,6 +6,37 @@ import { mapPayload, type FigmaInput } from "./mapping";
 
 figma.showUI(__html__, { width: 440, height: 560, themeColors: true });
 
+// When on, image-like leaves are rendered to PNG/JPG bytes and inlined as a data
+// URL, so exported images match Figma exactly. This makes the payload much larger
+// and exceeds the structural size limits, so it's a preview aid, off by default.
+let embedImages = false;
+
+const GRAPHIC_TYPES = new Set(["RECTANGLE", "ELLIPSE", "VECTOR", "LINE", "STAR", "POLYGON", "BOOLEAN_OPERATION"]);
+const CONTAINER_TYPES = new Set(["FRAME", "GROUP", "COMPONENT", "INSTANCE", "COMPONENT_SET", "SECTION"]);
+
+function hasImageFill(node: SceneNode): boolean {
+  return imageFillScaleMode(node) !== undefined;
+}
+
+/// A node whose pixels we rasterize: a graphic leaf, or an image-filled leaf.
+/// Containers stay containers (their children carry the content).
+function isImageLike(node: SceneNode): boolean {
+  if (GRAPHIC_TYPES.has(node.type)) return true;
+  if (CONTAINER_TYPES.has(node.type)) return false;
+  return hasImageFill(node);
+}
+
+async function rasterize(node: SceneNode): Promise<string | undefined> {
+  try {
+    const jpg = hasImageFill(node);
+    const bytes = await node.exportAsync({ format: jpg ? "JPG" : "PNG", constraint: { type: "SCALE", value: 2 } });
+    const mime = jpg ? "image/jpeg" : "image/png";
+    return `data:${mime};base64,${figma.base64Encode(bytes)}`;
+  } catch {
+    return undefined;
+  }
+}
+
 function solidFillHex(node: SceneNode): string | undefined {
   if (!("fills" in node) || !Array.isArray(node.fills)) return undefined;
   const paint = node.fills.find((p) => p.type === "SOLID" && p.visible !== false);
@@ -47,6 +78,11 @@ async function toInput(node: SceneNode): Promise<FigmaInput> {
   const scaleMode = imageFillScaleMode(node);
   if (scaleMode) input.imageScaleMode = scaleMode;
 
+  if (embedImages && isImageLike(node)) {
+    const data = await rasterize(node);
+    if (data) input.imageData = data;
+  }
+
   if (node.type === "TEXT") {
     input.characters = node.characters;
     if (typeof node.fontSize === "number") input.fontSize = node.fontSize;
@@ -79,6 +115,10 @@ async function run(): Promise<void> {
 void run();
 figma.on("selectionchange", () => void run());
 
-figma.ui.onmessage = (message: { type?: string }) => {
+figma.ui.onmessage = (message: { type?: string; value?: boolean }) => {
   if (message.type === "close") figma.closePlugin();
+  if (message.type === "embed") {
+    embedImages = message.value === true;
+    void run();
+  }
 };

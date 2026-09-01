@@ -10,6 +10,12 @@
     height: calc(100vh - 24px);
     box-sizing: border-box;
   }
+  .embed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
   #status {
     min-height: 16px;
     margin-bottom: 8px;
@@ -50,6 +56,7 @@
   }
 </style>
 
+<label class="embed"><input type="checkbox" id="embed"> Embed images (larger JSON, pixel-accurate preview)</label>
 <div id="status"></div>
 <textarea id="json" readonly placeholder="Select a frame to export its Murti JSON."></textarea>
 <div class="row">
@@ -88,5 +95,8 @@
   };
   document.getElementById("close").onclick = () => {
     parent.postMessage({ pluginMessage: { type: "close" } }, "*");
+  };
+  document.getElementById("embed").onchange = (event) => {
+    parent.postMessage({ pluginMessage: { type: "embed", value: event.target.checked } }, "*");
   };
 </script>

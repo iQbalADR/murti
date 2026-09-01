@@ -205,6 +205,15 @@ test("the image:systemName convention maps to an SF Symbol", () => {
   assert.deepEqual(node, { type: "image", props: { systemName: "star.fill" } });
 });
 
+test("embedded image data becomes the image url, overriding the name", () => {
+  const dataURI = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+  const node = mapNode(
+    { type: "RECTANGLE", name: "background", imageScaleMode: "FILL", imageData: dataURI },
+    [],
+  );
+  assert.deepEqual(node, { type: "image", props: { url: dataURI, contentMode: "fill" } });
+});
+
 test("an instance's type is inferred from its main component name", () => {
   const node = mapNode(
     {

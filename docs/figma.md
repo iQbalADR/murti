@@ -44,6 +44,18 @@ solid fill → `background`, a corner radius → `cornerRadius`, a text layer's 
 `color`, and its font style → `weight`. So an exported screen carries its colors and
 type weights, not just its structure.
 
+## Embedding images
+
+By design a payload references images by name/source, not by pixels — so an export
+gives you the image *slots*, and the app supplies the real photos. For a pixel
+preview, tick **Embed images** in the plugin: image-like layers (photos, icons,
+vectors) are rendered to PNG/JPG and inlined as a `data:` URL in the image's `url`,
+so the export renders exactly like Figma without any assets in the app.
+
+This is a preview aid only. Embedded pixels make the JSON much larger and blow past
+the payload's [size bounds](schema.md#bounds), so an embedded export isn't a valid
+production payload — ship images as named sources or URLs your app resolves.
+
 ## Actions and tokens
 
 Actions have no Figma equivalent, so a button and its action come from the layer

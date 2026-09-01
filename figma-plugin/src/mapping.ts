@@ -56,6 +56,7 @@ export interface FigmaInput {
   fontSize?: number;
   textStyleName?: string;
   imageScaleMode?: string;
+  imageData?: string;
   mainComponentName?: string;
   children?: FigmaInput[];
 }
@@ -171,8 +172,16 @@ function mapChildren(node: FigmaInput, warnings: string[]): MurtiNode[] {
 
 function imageProps(node: FigmaInput): Record<string, MurtiValue> {
   const props: Record<string, MurtiValue> = {};
-  const parts = node.name.split(":").map((part) => part.trim());
 
+  // Embedded pixels (from `Embed images`) render exactly; otherwise fall back to a
+  // name or the `image:systemName:` convention.
+  if (node.imageData) {
+    props.url = node.imageData;
+    if (node.imageScaleMode === "FILL") props.contentMode = "fill";
+    return props;
+  }
+
+  const parts = node.name.split(":").map((part) => part.trim());
   if (parts[0]?.toLowerCase() === "image" && parts.length > 1) {
     if (SYSTEM_IMAGE_VERBS.has(parts[1].toLowerCase())) {
       if (parts[2]) props.systemName = parts[2];
