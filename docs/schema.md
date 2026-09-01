@@ -110,6 +110,40 @@ action** carries *named* targets at its top level, never a URL.
 
 ---
 
+## Style props
+
+On top of their structural props, the built-in components read a small, closed set
+of visual props. The value space stays bounded — a color is a hex string, a weight
+is a known name — and anything unrecognized is ignored (render-what-you-can), so
+these never break an older client.
+
+| Prop | On | Value |
+| --- | --- | --- |
+| `color` | `text` | hex `#RGB` / `#RRGGBB` / `#RRGGBBAA` |
+| `weight` | `text` | `ultralight` `thin` `light` `regular` `medium` `semibold` `bold` `heavy` `black` |
+| `size` | `text` | number (point size; overrides `style`'s size) |
+| `background` | `vstack` `hstack` `card` `text` `image` `button` | hex color |
+| `foreground` | `card` | hex color (tints the card's text) |
+| `cornerRadius` | any container | number |
+| `padding` | any container | number |
+
+`card` keeps its grey box and rounded corners as defaults; `background`,
+`cornerRadius`, `padding`, and `foreground` override them.
+
+```json
+{ "type": "card",
+  "props": { "background": "#EB6D00", "cornerRadius": 16, "foreground": "#FFFFFF" },
+  "children": [
+    { "type": "text", "props": { "value": "Rp150.000", "weight": "bold", "size": 28 } }
+  ]
+}
+```
+
+The `props` bag is open, so these need no schema change; they're bounded by the
+components that read them, not by the structural schema.
+
+---
+
 ## Manifest
 
 The cache's version index is fetched as its own signed payload — the **same

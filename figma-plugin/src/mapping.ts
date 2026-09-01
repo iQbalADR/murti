@@ -49,7 +49,9 @@ export interface FigmaInput {
   counterAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "BASELINE";
   padding?: number;
   cornerRadius?: number;
-  hasBackground?: boolean;
+  fillColor?: string;
+  textColor?: string;
+  fontStyle?: string;
   characters?: string;
   fontSize?: number;
   textStyleName?: string;
@@ -123,6 +125,9 @@ function mapText(node: FigmaInput): MurtiNode {
   const props: Record<string, MurtiValue> = { value: node.characters ?? "" };
   const style = styleForName(node.textStyleName) ?? styleForFontSize(node.fontSize);
   if (style) props.style = style;
+  if (node.textColor) props.color = node.textColor;
+  const weight = weightForFontStyle(node.fontStyle);
+  if (weight && weight !== "regular") props.weight = weight;
   return { type: "text", props };
 }
 
@@ -141,6 +146,8 @@ function mapContainer(node: FigmaInput, type: "vstack" | "hstack" | "card", warn
     const alignment = alignmentFor(node, type);
     if (alignment) props.alignment = alignment;
   }
+  if (node.fillColor) props.background = node.fillColor;
+  if (typeof node.cornerRadius === "number" && node.cornerRadius > 0) props.cornerRadius = node.cornerRadius;
 
   if (Object.keys(props).length > 0) result.props = props;
   const children = mapChildren(node, warnings);
@@ -239,7 +246,22 @@ function stackTypeFor(node: FigmaInput): "vstack" | "hstack" {
 /// A frame with a background fill and rounded corners reads as a card rather than a
 /// bare stack.
 function isCardLike(node: FigmaInput): boolean {
-  return node.hasBackground === true && typeof node.cornerRadius === "number" && node.cornerRadius > 0;
+  return node.fillColor !== undefined && typeof node.cornerRadius === "number" && node.cornerRadius > 0;
+}
+
+/// Map a Figma font-style name ("Semi Bold", "Bold", …) to a Murti weight keyword.
+function weightForFontStyle(style?: string): string | undefined {
+  if (!style) return undefined;
+  const s = style.toLowerCase().replace(/\s+/g, "");
+  const keywords = [
+    "ultralight", "extralight", "thin", "light", "regular", "normal",
+    "medium", "semibold", "demibold", "bold", "heavy", "black",
+  ];
+  const aliases: Record<string, string> = { extralight: "ultralight", demibold: "semibold", normal: "regular" };
+  for (const keyword of keywords) {
+    if (s.includes(keyword)) return aliases[keyword] ?? keyword;
+  }
+  return undefined;
 }
 
 /// Figma's cross-axis alignment mapped to the stack's `alignment` prop. `center` is

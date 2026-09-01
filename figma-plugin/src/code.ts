@@ -6,9 +6,15 @@ import { mapPayload, type FigmaInput } from "./mapping";
 
 figma.showUI(__html__, { width: 440, height: 560, themeColors: true });
 
-function hasVisibleSolidFill(node: SceneNode): boolean {
-  if (!("fills" in node) || !Array.isArray(node.fills)) return false;
-  return node.fills.some((paint) => paint.type === "SOLID" && paint.visible !== false);
+function solidFillHex(node: SceneNode): string | undefined {
+  if (!("fills" in node) || !Array.isArray(node.fills)) return undefined;
+  const paint = node.fills.find((p) => p.type === "SOLID" && p.visible !== false);
+  if (!paint || paint.type !== "SOLID") return undefined;
+  const channel = (value: number) => Math.round(value * 255).toString(16).padStart(2, "0").toUpperCase();
+  let hex = "#" + channel(paint.color.r) + channel(paint.color.g) + channel(paint.color.b);
+  const opacity = paint.opacity ?? 1;
+  if (opacity < 1) hex += channel(opacity);
+  return hex;
 }
 
 function imageFillScaleMode(node: SceneNode): string | undefined {
@@ -31,7 +37,12 @@ async function toInput(node: SceneNode): Promise<FigmaInput> {
   if ("cornerRadius" in node && typeof node.cornerRadius === "number") {
     input.cornerRadius = node.cornerRadius;
   }
-  if (hasVisibleSolidFill(node)) input.hasBackground = true;
+
+  const fill = solidFillHex(node);
+  if (fill) {
+    if (node.type === "TEXT") input.textColor = fill;
+    else input.fillColor = fill;
+  }
 
   const scaleMode = imageFillScaleMode(node);
   if (scaleMode) input.imageScaleMode = scaleMode;
@@ -39,6 +50,7 @@ async function toInput(node: SceneNode): Promise<FigmaInput> {
   if (node.type === "TEXT") {
     input.characters = node.characters;
     if (typeof node.fontSize === "number") input.fontSize = node.fontSize;
+    if (node.fontName !== figma.mixed) input.fontStyle = node.fontName.style;
     if (typeof node.textStyleId === "string" && node.textStyleId !== "") {
       const style = await figma.getStyleByIdAsync(node.textStyleId);
       if (style) input.textStyleName = style.name;
