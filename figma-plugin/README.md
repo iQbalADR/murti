@@ -1,7 +1,13 @@
 # Murti Export (Figma plugin)
 
+> **Experimental.** This produces rough structural scaffolding from a design — a
+> starting point you refine — not a pixel-accurate conversion. For authoring real
+> screens, prefer the MurtiBuilder DSL or MurtiStudio, which emit clean, validated
+> payloads directly. See "What it can't do" in `docs/figma.md`.
+
 Exports the selected Figma frame as a validated Murti SDUI payload (`schemaVersion`
-+ `screen`), so a design can become a Murti screen without writing JSON by hand.
++ `screen`), so a design can become an approximate Murti screen without writing JSON
+by hand.
 
 The mapping is lossy by design: Murti has a closed component vocabulary, so only the
 layers that map to a component are exported. Anything else produces a warning.
