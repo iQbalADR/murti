@@ -42,7 +42,8 @@ theme:
 nav:
   - Home: index.md
   - Reference:
-      - Authoring screens: authoring.md
+      - Authoring guide: guide.md
+      - The DSL & MurtiGen: authoring.md
       - Visual editor: studio.md
       - Figma export: figma.md
       - Payload schema & validation: schema.md
