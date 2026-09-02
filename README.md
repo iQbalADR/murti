@@ -235,7 +235,9 @@ simulator).
 
 ## Docs
 
-- [Authoring screens](docs/authoring.md) — the MurtiBuilder DSL for writing
+- [Authoring guide](docs/guide.md) — start here: the three ways to write a screen,
+  the component vocabulary, tokens, actions, and validation.
+- [The DSL & MurtiGen](docs/authoring.md) — the MurtiBuilder DSL for writing
   screens in Swift, and MurtiGen for build-time JSON generation. **Primary path.**
 - [Visual editor](docs/studio.md) — MurtiStudio, a SwiftUI app that edits the node
   tree by direct manipulation and exports validated JSON. **Primary path.**
