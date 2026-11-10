@@ -13,7 +13,7 @@ public struct MurtiScreen: View {
     private let explicitEngine: MurtiEngine?
     @Environment(\.murti) private var environmentEngine
     @State private var state: LoadState = .loading
-    @State private var data: DataContext
+    @StateObject private var data: DataContext
 
     /// - Parameters:
     ///   - source: where the screen JSON comes from.
@@ -22,7 +22,7 @@ public struct MurtiScreen: View {
     public init(_ source: ScreenSource, engine: MurtiEngine? = nil, seed: [String: MurtiValue] = [:]) {
         self.source = source
         self.explicitEngine = engine
-        _data = State(initialValue: DataContext(seed))
+        _data = StateObject(wrappedValue: DataContext(seed))
     }
 
     public var body: some View {

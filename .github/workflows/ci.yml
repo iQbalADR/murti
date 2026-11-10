@@ -19,6 +19,20 @@ jobs:
       - run: swift build
       - run: swift test
 
+  ios:
+    name: build for iOS (minimum deployment target)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      # The macOS job builds against macOS 14, which allows APIs that iOS 15 lacks.
+      # Building for iOS checks the libraries and the gallery against the iOS minimum.
+      - run: xcodebuild build -scheme MurtiCore -destination 'generic/platform=iOS Simulator'
+      - run: xcodebuild build -scheme MurtiBuilder -destination 'generic/platform=iOS Simulator'
+      - run: xcodebuild build -scheme MurtiGallery -destination 'generic/platform=iOS Simulator'
+
   figma:
     name: figma plugin (typecheck + test)
     runs-on: ubuntu-latest

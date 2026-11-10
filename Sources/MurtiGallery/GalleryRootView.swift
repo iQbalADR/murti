@@ -5,17 +5,15 @@ import MurtiCore
 /// Records the most recent action a JSON-defined control dispatched, so the demo
 /// can show that taps actually flow through the command layer.
 @MainActor
-@Observable
-final class ActionLog {
-    private(set) var last = "No action yet"
+final class ActionLog: ObservableObject {
+    @Published private(set) var last = "No action yet"
     func note(_ message: String) { last = message }
 }
 
 /// Owns the shared engine (wired with built-in components and a navigator that
 /// reports effects into the `ActionLog`).
 @MainActor
-@Observable
-final class GalleryModel {
+final class GalleryModel: ObservableObject {
     let actionLog: ActionLog
     let engine: MurtiEngine
 
@@ -40,10 +38,10 @@ final class GalleryModel {
 }
 
 struct GalleryRootView: View {
-    @State private var model = GalleryModel()
+    @StateObject private var model = GalleryModel()
 
     var body: some View {
-        NavigationStack {
+        GalleryNavigation {
             List {
                 Section("Examples") {
                     ForEach(GalleryExamples.all) { example in
@@ -73,8 +71,27 @@ struct GalleryRootView: View {
     }
 }
 
+/// `NavigationStack` where the OS has it, and a stack-style `NavigationView` on
+/// iOS 15.
+struct GalleryNavigation<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        #if os(macOS)
+        NavigationStack { content() }
+        #else
+        if #available(iOS 16, *) {
+            NavigationStack { content() }
+        } else {
+            NavigationView { content() }
+                .navigationViewStyle(.stack)
+        }
+        #endif
+    }
+}
+
 struct ActionBanner: View {
-    let log: ActionLog
+    @ObservedObject var log: ActionLog
 
     var body: some View {
         HStack(spacing: 6) {

@@ -41,6 +41,9 @@ struct RootView: View {
 }
 ```
 
+Murti supports iOS 15 and later. `NavigationStack` needs iOS 16, so an app that
+still supports iOS 15 wraps the screen in `NavigationView` there instead.
+
 ## Reference
 
 - [Payload schema & validation](schema.md) — the authoritative JSON Schema, the

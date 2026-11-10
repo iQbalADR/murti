@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Testing
 @testable import MurtiCore
@@ -16,6 +17,15 @@ struct DataContextTests {
         let context = DataContext()
         context.merge(["balance": .number(100)])
         #expect(context.value(forKeyPath: "balance") == .number(100))
+    }
+
+    @Test func mergePublishesAChange() {
+        let context = DataContext()
+        var changes = 0
+        let subscription = context.objectWillChange.sink { changes += 1 }
+        context.merge(["balance": .number(100)])
+        subscription.cancel()
+        #expect(changes == 1)
     }
 
     @Test func resolvesTokens() {
