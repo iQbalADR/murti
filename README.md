@@ -4,7 +4,7 @@
 [![Docs](https://img.shields.io/badge/docs-murti-blue)](https://iqbaladr.github.io/murti/)
 [![Swift 6](https://img.shields.io/badge/Swift-6-orange.svg)](https://swift.org)
 [![SwiftPM](https://img.shields.io/badge/SwiftPM-compatible-brightgreen)](https://github.com/iQbalADR/murti)
-[![Platforms](https://img.shields.io/badge/platforms-iOS%2017%20%7C%20macOS%2014-lightgrey.svg)](https://github.com/iQbalADR/murti)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2015%20%7C%20macOS%2014-lightgrey.svg)](https://github.com/iQbalADR/murti)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 > A SwiftUI-native **server-driven UI** framework — render screens from JSON,
@@ -24,7 +24,7 @@ release. Deliberately **SwiftUI-only** — a strength, not a limitation.
 ## Requirements
 
 - Swift 6, Xcode 16+
-- iOS 17+ / iPadOS 17+ / macOS 14+ (SwiftUI `NavigationStack` + Observation)
+- iOS 15+ / iPadOS 15+ / macOS 14+
 - Swift Package Manager
 
 ```swift
@@ -62,6 +62,9 @@ struct RootView: View {
     }
 }
 ```
+
+`NavigationStack` needs iOS 16. An app that still supports iOS 15 wraps the screen
+in `NavigationView` there instead; `MurtiScreen` itself works the same in both.
 
 ### Add a component
 

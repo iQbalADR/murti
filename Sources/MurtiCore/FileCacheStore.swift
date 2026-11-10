@@ -29,11 +29,11 @@ public actor FileCacheStore: MurtiCacheStore {
     /// and the `.`/`..` segments so a caller cannot escape the cache directory.
     private func url(for key: String) -> URL? {
         guard !key.isEmpty, !key.contains("/"), key != "..", key != "." else { return nil }
-        return directory.appending(path: key)
+        return directory.appendingPathComponent(key)
     }
 
     public static var defaultDirectory: URL {
         (try? FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true))?
-            .appending(path: "Murti") ?? URL.temporaryDirectory.appending(path: "Murti")
+            .appendingPathComponent("Murti") ?? FileManager.default.temporaryDirectory.appendingPathComponent("Murti")
     }
 }

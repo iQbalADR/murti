@@ -1,16 +1,16 @@
+import Combine
 import Foundation
-import Observation
 
 /// The token store threaded through a screen render — the glue of the data-context
 /// lifecycle.
 ///
 /// Nav params seed it; API responses merge in; `{{token}}` resolves against it at
-/// render time. `@Observable` so dependent views re-resolve automatically with no
-/// manual invalidation; `@MainActor` because it drives view state.
+/// render time. It is an `ObservableObject` that publishes on every change, so a
+/// view holding it with `@StateObject` or `@ObservedObject` re-renders when values
+/// merge in; `@MainActor` because it drives view state.
 @MainActor
-@Observable
-public final class DataContext {
-    private var storage: [String: MurtiValue]
+public final class DataContext: ObservableObject {
+    @Published private var storage: [String: MurtiValue]
 
     public init(_ seed: [String: MurtiValue] = [:]) {
         storage = seed
